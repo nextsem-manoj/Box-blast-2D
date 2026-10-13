@@ -19,6 +19,7 @@ namespace BoxBlast
         public int CurrentCoins { get; private set; }
         public int CurrentCombo { get; private set; }
         public bool IsGameOver { get; private set; }
+        public bool IsClassicActive { get; private set; } = false;
 
         public const int MaxRevivesPerGame = 3;
         public int RevivesUsed { get; private set; } = 0;
@@ -357,9 +358,39 @@ namespace BoxBlast
             if (UIManager.Instance != null)
             {
                 UIManager.Instance.HideGameOver();
+                UIManager.Instance.HideDefeatModal();
+                UIManager.Instance.HideVictoryModal();
                 UIManager.Instance.UpdateScore(CurrentScore, BestScore);
                 UIManager.Instance.UpdateCoins(CurrentCoins);
             }
+        }
+
+        public void OnLevelStarted()
+        {
+            IsClassicActive = false;
+            ResetScoreForLevel();
+        }
+
+        public void StartClassicGame(bool forceRestart = false)
+        {
+            if (LevelManager.Instance != null && (LevelManager.Instance.IsLevelActive || LevelManager.Instance.IsLevelCompleted))
+            {
+                LevelManager.Instance.StopLevel();
+            }
+
+            // If player was already playing a Classic game, has moves/score, and not forced, resume it
+            if (IsClassicActive && !IsGameOver && CurrentScore > 0 && !forceRestart)
+            {
+                if (UIManager.Instance != null)
+                {
+                    UIManager.Instance.UpdateHUDVisibility();
+                    UIManager.Instance.UpdateScore(CurrentScore, BestScore);
+                }
+                return;
+            }
+
+            RestartGame();
+            IsClassicActive = true;
         }
 
         public void RestartGame()
@@ -368,6 +399,7 @@ namespace BoxBlast
             IsGameOver = false;
             CurrentScore = 0;
             CurrentCombo = 0;
+            IsClassicActive = true;
 
             if (LevelManager.Instance != null && LevelManager.Instance.IsLevelActive)
             {
@@ -377,19 +409,24 @@ namespace BoxBlast
             if (UIManager.Instance != null)
             {
                 UIManager.Instance.HideGameOver();
+                UIManager.Instance.HideDefeatModal();
+                UIManager.Instance.HideVictoryModal();
                 UIManager.Instance.HideLevelHUD();
                 UIManager.Instance.UpdateScore(CurrentScore, BestScore);
                 UIManager.Instance.UpdateCoins(CurrentCoins);
                 UIManager.Instance.UpdateBoosterBar();
             }
 
+            bool isLandscape = Screen.width > Screen.height;
             if (GridManager.Instance != null)
             {
+                GridManager.Instance.UpdateLayout(isLandscape);
                 GridManager.Instance.ResetGrid();
             }
 
             if (ShapeSpawner.Instance != null)
             {
+                ShapeSpawner.Instance.UpdateLayout(isLandscape);
                 ShapeSpawner.Instance.SpawnBatch();
             }
         }

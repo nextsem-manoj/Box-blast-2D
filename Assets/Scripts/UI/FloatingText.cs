@@ -34,9 +34,9 @@ namespace BoxBlast
             m_TextMesh = gameObject.AddComponent<TextMesh>();
             MeshRenderer mr = GetComponent<MeshRenderer>();
 
-            Font font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            Font font = Resources.Load<Font>("LilitaOne");
+            if (font == null) font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
             if (font == null) font = Resources.GetBuiltinResource<Font>("Arial.ttf");
-            if (font == null) font = Font.CreateDynamicFontFromOSFont("Arial", 16);
 
             if (font != null)
             {

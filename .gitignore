@@ -60,6 +60,22 @@ sysinfo.txt
 # Crashlytics
 crashlytics-build.properties
 
+# Keystores & Signing keys
+*.keystore
+*.jks
+*.pem
+
+# Unity Recovery
+Assets/_Recovery/
+Assets/_Recovery.meta
+
+# Root scratch / concept images & workspaces
+adventure_3d_concept_*
+Screensort.jpeg
+*.code-workspace
+*.code-workspace.meta
+
 # OS generated
 .DS_Store
 Thumbs.db
+

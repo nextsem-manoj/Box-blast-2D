@@ -58,7 +58,7 @@ namespace BoxBlast
 
         public static LevelData GetLevel(GameModeType mode, int levelNum)
         {
-            int maxLvl = (mode == GameModeType.Adventure) ? 40 : 20;
+            int maxLvl = LevelManager.GetMaxLevel(mode);
             levelNum = Mathf.Clamp(levelNum, 1, maxLvl);
             string key = $"{mode}_{levelNum}";
             if (s_Levels.TryGetValue(key, out LevelData data))
@@ -92,14 +92,14 @@ namespace BoxBlast
                 Dictionary<GemType, int> targets;
                 int[,] pattern = GeneratePatternForAdventure(i, out gems, out targets);
 
-                // Scale gem targets gracefully: Level 1 has ~24 gems, Level 2 has ~56 gems, scaling up to ~75 gems
-                int scaleMultiplier = (i == 1) ? 3 : (i <= 5 ? 4 : (i <= 15 ? 5 : 6));
+                // Handcrafted Gem Objectives: Collect the embedded gems from the board!
                 Dictionary<GemType, int> balancedTargets = new Dictionary<GemType, int>();
                 if (targets != null)
                 {
                     foreach (var kvp in targets)
                     {
-                        balancedTargets[kvp.Key] = kvp.Value * scaleMultiplier;
+                        // 1:1 match with handcrafted embedded gems on the board
+                        balancedTargets[kvp.Key] = kvp.Value;
                     }
                 }
 
@@ -108,7 +108,7 @@ namespace BoxBlast
                     LevelNumber = i,
                     Mode = GameModeType.Adventure,
                     LevelName = adventureNames[i - 1],
-                    MovesLimit = 28 + (i <= 5 ? 8 : 4), // 32 to 36 moves for thoughtful, engaging puzzle play
+                    MovesLimit = 32 + (i <= 5 ? 8 : 4), // 36 to 40 moves for smooth, enjoyable, winning gameplay
                     GoalType = LevelGoalType.CollectGems,
                     TargetGems = balancedTargets,
                     TargetScore = 800 + i * 150,

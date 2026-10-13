@@ -36,7 +36,7 @@ namespace BoxBlast.Editor
             }
 
             // 2. Event System
-            EventSystem es = Object.FindFirstObjectByType<EventSystem>();
+            EventSystem es = Object.FindAnyObjectByType<EventSystem>();
             if (es == null)
             {
                 GameObject esObj = new GameObject("EventSystem");
@@ -50,7 +50,7 @@ namespace BoxBlast.Editor
             }
 
             // 3. GameBootstrapper
-            GameBootstrapper bootstrapper = Object.FindFirstObjectByType<GameBootstrapper>();
+            GameBootstrapper bootstrapper = Object.FindAnyObjectByType<GameBootstrapper>();
             if (bootstrapper == null)
             {
                 GameObject bootObj = new GameObject("GameBootstrapper");
@@ -150,6 +150,18 @@ namespace BoxBlast.Editor
 
                 EditorUtility.DisplayDialog("Build Notice", userMessage, "OK");
             }
+        }
+    }
+
+    [InitializeOnLoad]
+    public static class AutoAssetRefresh
+    {
+        static AutoAssetRefresh()
+        {
+            EditorApplication.delayCall += () =>
+            {
+                AssetDatabase.Refresh(ImportAssetOptions.ForceUpdate);
+            };
         }
     }
 }

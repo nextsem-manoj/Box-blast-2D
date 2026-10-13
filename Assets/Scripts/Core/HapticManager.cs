@@ -32,7 +32,7 @@ namespace BoxBlast
 
         public static void TriggerLight()
         {
-            if (!IsHapticsEnabled) return;
+            if (!IsHapticsEnabled || Application.isEditor) return;
 
 #if UNITY_ANDROID || UNITY_IOS
             Handheld.Vibrate();
@@ -41,7 +41,7 @@ namespace BoxBlast
 
         public static void TriggerMedium()
         {
-            if (!IsHapticsEnabled) return;
+            if (!IsHapticsEnabled || Application.isEditor) return;
 
 #if UNITY_ANDROID || UNITY_IOS
             Handheld.Vibrate();
@@ -50,7 +50,7 @@ namespace BoxBlast
 
         public static void TriggerHeavy()
         {
-            if (!IsHapticsEnabled) return;
+            if (!IsHapticsEnabled || Application.isEditor) return;
 
 #if UNITY_ANDROID || UNITY_IOS
             Handheld.Vibrate();

@@ -70,7 +70,8 @@ namespace BoxBlast
             m_BackdropObj.transform.position = new Vector3(0f, 0f, 5f);
 
             m_BackdropSr = m_BackdropObj.AddComponent<SpriteRenderer>();
-            m_BackdropSr.sprite = SpriteFactory.GetCosmicStarryBackgroundSprite();
+            Sprite c1Bg = Resources.Load<Sprite>("GameplayBackground_Concept1");
+            m_BackdropSr.sprite = (c1Bg != null) ? c1Bg : SpriteFactory.GetCosmicStarryBackgroundSprite();
             m_BackdropSr.sortingOrder = -25;
             m_BackdropSr.color = Color.white;
         }
@@ -133,11 +134,13 @@ namespace BoxBlast
             UpdateCameraBounds();
 
             // Resize background plane to always cover camera viewport + shake bleed margin
-            if (m_BackdropObj != null)
+            if (m_BackdropObj != null && m_BackdropSr != null && m_BackdropSr.sprite != null)
             {
                 float bgWidth = m_CamHalfWidth * 2.6f;
                 float bgHeight = m_CamHalfHeight * 2.6f;
-                m_BackdropObj.transform.localScale = new Vector3(bgWidth, bgHeight, 1f);
+                float spriteW = Mathf.Max(0.1f, m_BackdropSr.sprite.bounds.size.x);
+                float spriteH = Mathf.Max(0.1f, m_BackdropSr.sprite.bounds.size.y);
+                m_BackdropObj.transform.localScale = new Vector3(bgWidth / spriteW, bgHeight / spriteH, 1f);
             }
 
             // Animate floating stardust motes with gentle upward drift and twinkling

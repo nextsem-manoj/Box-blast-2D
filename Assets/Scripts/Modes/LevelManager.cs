@@ -33,6 +33,9 @@ namespace BoxBlast
         public int ExtraMovesRemaining => Mathf.Max(0, MaxExtraMovesPerLevel - ExtraMovesUsed);
         public bool CanAddExtraMoves => ExtraMovesRemaining > 0;
 
+        public const int MaxAdventureLevels = 40;
+        public static int GetMaxLevel(GameModeType mode) => (mode == GameModeType.Adventure) ? MaxAdventureLevels : 20;
+
         private const string PrefsPrefix = "BoxBlast_Progression_";
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
@@ -46,6 +49,19 @@ namespace BoxBlast
             if (Instance == null)
             {
                 Instance = this;
+                // One-time progression reset migration so player starts fresh from Level 1
+                // with levels 2..40 properly locked (clearing legacy fake unlocked data)
+                if (PlayerPrefs.GetInt("BoxBlast_Progression_ResetToLevel1_V3", 0) == 0)
+                {
+                    ResetAllProgress(GameModeType.Adventure);
+                    UnlockLevel(GameModeType.Adventure, 1);
+                    ResetAllProgress(GameModeType.Event);
+                    UnlockLevel(GameModeType.Event, 1);
+                    ResetAllProgress(GameModeType.Task);
+                    UnlockLevel(GameModeType.Task, 1);
+                    PlayerPrefs.SetInt("BoxBlast_Progression_ResetToLevel1_V3", 1);
+                    PlayerPrefs.Save();
+                }
             }
             else
             {
@@ -62,13 +78,23 @@ namespace BoxBlast
         public void StartLevel(GameModeType mode, int levelNum)
         {
             CurrentMode = mode;
-            int maxLvl = (mode == GameModeType.Adventure) ? 40 : 20;
+            int maxLvl = GetMaxLevel(mode);
             CurrentLevelNumber = Mathf.Clamp(levelNum, 1, maxLvl);
 
             if (!IsLevelUnlocked(mode, CurrentLevelNumber))
             {
                 Debug.LogWarning($"Level {CurrentLevelNumber} in {mode} is locked!");
                 return;
+            }
+
+            // Stop any ongoing delayed defeat/victory evaluation coroutines from previous runs
+            StopAllCoroutines();
+
+            if (UIManager.Instance != null)
+            {
+                UIManager.Instance.HideDefeatModal();
+                UIManager.Instance.HideVictoryModal();
+                UIManager.Instance.HideGameOver();
             }
 
             CurrentLevel = LevelDatabase.GetLevel(mode, CurrentLevelNumber);
@@ -82,43 +108,59 @@ namespace BoxBlast
             IsLevelActive = false;
             IsLevelCompleted = false;
 
-            // 1. Reset Board & Load Pattern with Embedded Gems
+            DraggableShape.ResetActiveDrag();
+
+            // 1. Activate level FIRST so managers know Adventure layout is active
+            IsLevelActive = true;
+
+            // 2. Switch Grid and Spawner to Adventure mode layout
+            bool isLandscape = Screen.width > Screen.height;
             if (GridManager.Instance != null)
             {
+                GridManager.Instance.UpdateLayout(isLandscape);
                 GridManager.Instance.ResetGrid();
                 GridManager.Instance.LoadPattern(CurrentLevel.InitialPattern, CurrentLevel.InitialGems);
             }
-
-            // 2. Refill bottom dock
             if (ShapeSpawner.Instance != null)
             {
+                ShapeSpawner.Instance.UpdateLayout(isLandscape);
                 ShapeSpawner.Instance.SpawnBatch();
             }
 
-            // 3. Reset Score in GameManager
+            // 4. Reset Score in GameManager & mark Classic inactive
             if (GameManager.Instance != null)
             {
-                GameManager.Instance.ResetScoreForLevel();
+                GameManager.Instance.OnLevelStarted();
             }
 
-            // 4. Update Level HUD
+            // 5. Update Level HUD & ensure Adventure level HUD is fully visible
             if (UIManager.Instance != null)
             {
                 UIManager.Instance.ShowLevelHUD(CurrentLevel, MovesRemaining, GetGoalProgressText());
                 UIManager.Instance.UpdateGemObjectives(CollectedGems, CurrentLevel.TargetGems);
+                UIManager.Instance.UpdateHUDVisibility();
             }
-
-            // 5. Setup 100% complete: Now activate level for player moves!
-            IsLevelActive = true;
         }
 
         public void StopLevel()
         {
+            StopAllCoroutines();
             IsLevelActive = false;
             IsLevelCompleted = false;
+            DraggableShape.ResetActiveDrag();
             if (UIManager.Instance != null)
             {
+                UIManager.Instance.HideDefeatModal();
+                UIManager.Instance.HideVictoryModal();
                 UIManager.Instance.HideLevelHUD();
+            }
+            if (GridManager.Instance != null)
+            {
+                GridManager.Instance.ResetGrid();
+            }
+            if (ShapeSpawner.Instance != null)
+            {
+                ShapeSpawner.Instance.ClearAll();
             }
         }
 
@@ -141,12 +183,29 @@ namespace BoxBlast
                     return;
                 }
 
-                // Out of moves check
+                // Out of moves check: Give any active line clear animations & flying gems time to land before evaluating defeat!
                 if (MovesRemaining <= 0)
                 {
-                    FailLevel(DefeatReason.OutOfMoves);
+                    StartCoroutine(EvaluateDelayedDefeat());
                     return;
                 }
+            }
+        }
+
+        private System.Collections.IEnumerator EvaluateDelayedDefeat()
+        {
+            // Grace period: allow line blast wave (up to 0.40s) and flying gems to reach HUD
+            yield return new WaitForSeconds(0.60f);
+
+            if (!IsLevelActive || IsLevelCompleted) yield break;
+
+            if (CheckGoalReached())
+            {
+                CompleteLevel();
+            }
+            else if (MovesRemaining <= 0)
+            {
+                FailLevel(DefeatReason.OutOfMoves);
             }
         }
 
@@ -294,7 +353,7 @@ namespace BoxBlast
 
             if (UIManager.Instance != null)
             {
-                int maxLvl = (CurrentMode == GameModeType.Adventure) ? 40 : 20;
+                int maxLvl = GetMaxLevel(CurrentMode);
                 UIManager.Instance.ShowLevelCompleteModal(CurrentMode, CurrentLevelNumber, stars, CurrentLevelNumber < maxLvl, unlockedSkin);
             }
         }
@@ -321,6 +380,7 @@ namespace BoxBlast
         {
             if (CanAddExtraMoves)
             {
+                DraggableShape.ResetActiveDrag();
                 ExtraMovesUsed++;
                 MovesRemaining += extraMoves;
                 IsLevelActive = true;
@@ -351,7 +411,7 @@ namespace BoxBlast
 
         public void NextLevel()
         {
-            int maxLvl = (CurrentMode == GameModeType.Adventure) ? 40 : 20;
+            int maxLvl = GetMaxLevel(CurrentMode);
             if (CurrentLevelNumber < maxLvl)
             {
                 StartLevel(CurrentMode, CurrentLevelNumber + 1);
@@ -384,7 +444,7 @@ namespace BoxBlast
 
         public static int GetHighestUnlockedLevel(GameModeType mode)
         {
-            int maxLvl = (mode == GameModeType.Adventure) ? 40 : 20;
+            int maxLvl = GetMaxLevel(mode);
             for (int i = maxLvl; i >= 1; i--)
             {
                 if (IsLevelUnlocked(mode, i)) return i;
@@ -394,7 +454,7 @@ namespace BoxBlast
 
         public static void ResetAllProgress(GameModeType mode)
         {
-            int maxLvl = (mode == GameModeType.Adventure) ? 40 : 20;
+            int maxLvl = GetMaxLevel(mode);
             for (int i = 1; i <= maxLvl; i++)
             {
                 PlayerPrefs.DeleteKey($"{PrefsPrefix}{mode}_{i}_unlocked");
@@ -405,7 +465,7 @@ namespace BoxBlast
 
         public static void UnlockLevel(GameModeType mode, int level)
         {
-            int maxLvl = (mode == GameModeType.Adventure) ? 40 : 20;
+            int maxLvl = GetMaxLevel(mode);
             if (level > maxLvl) return;
             string key = $"{PrefsPrefix}{mode}_{level}_unlocked";
             PlayerPrefs.SetInt(key, 1);

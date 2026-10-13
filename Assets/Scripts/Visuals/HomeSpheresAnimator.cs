@@ -58,9 +58,9 @@ namespace BoxBlast
         private float m_BaseCenterY = 0f;
         private bool m_HasBaseCenterY = false;
 
-        // Orbit Parameters
-        private float m_RadiusX = 136f;
-        private float m_RadiusY = 88f;
+        // Orbit Parameters (Matches circular neon orbit of Concept 3 artwork)
+        private float m_RadiusX = 168f;
+        private float m_RadiusY = 168f;
         private float m_BaseOrbitSpeed = 30f; // Degrees per second (smooth, majestic continuous rotation)
         private float m_CurrentOrbitAngle = 0f;
 
@@ -75,8 +75,14 @@ namespace BoxBlast
         private float m_GlintTimer = 0f;
         private int m_GlintSphereIndex = 0;
 
-        // Center Ambient Core Glow
+        // Concept 3: Central Starburst Core & Orbit Rings
         private Image m_CenterCoreGlow;
+        private RectTransform m_StarRaysRt;
+        private Image m_StarRaysImg;
+        private RectTransform m_StarCoreRt;
+        private Image m_StarCoreImg;
+        private RectTransform m_OrbitRingsRt;
+        private Image m_OrbitRingsImg;
 
         // UI Sparkle Particle Pool for Tap Reactions
         private class UISparkle
@@ -131,11 +137,19 @@ namespace BoxBlast
 
         public void RefreshSpheresSkin()
         {
+            BallSkinType currentSkin = SkinManager.CurrentSkin;
             for (int i = 0; i < m_Spheres.Count; i++)
             {
                 if (m_Spheres[i].sphereImg != null)
                 {
-                    m_Spheres[i].sphereImg.sprite = SpriteFactory.GetBlockSprite(m_Spheres[i].baseColor);
+                    if (currentSkin != BallSkinType.Classic)
+                    {
+                        m_Spheres[i].sphereImg.sprite = SpriteFactory.GetWardrobeSkinSprite(currentSkin);
+                    }
+                    else
+                    {
+                        m_Spheres[i].sphereImg.sprite = SpriteFactory.GetConcept3SphereSprite(i);
+                    }
                 }
             }
         }
@@ -189,26 +203,59 @@ namespace BoxBlast
             }
             m_Spheres.Clear();
 
-            // 1. Soft Ambient Center Core Glow (Celestial focal point inside the ring)
+            // 0. Celestial Orbit (Rings are built into the Concept 3 background plate; subtle aura overlay)
+            GameObject ringsObj = new GameObject("CelestialOrbitRings");
+            ringsObj.transform.SetParent(transform, false);
+            m_OrbitRingsRt = ringsObj.AddComponent<RectTransform>();
+            m_OrbitRingsRt.anchoredPosition = Vector2.zero;
+            m_OrbitRingsRt.sizeDelta = new Vector2(380f, 380f);
+            m_OrbitRingsImg = ringsObj.AddComponent<Image>();
+            m_OrbitRingsImg.sprite = SpriteFactory.GetGlowOrbitRingSprite();
+            m_OrbitRingsImg.color = Color.clear; // Clear to let background's neon rings show cleanly
+            m_OrbitRingsImg.raycastTarget = false;
+
+            // 1a. Soft Ambient Center Core Glow (Celestial focal point inside the ring)
             GameObject centerCoreObj = new GameObject("CenterAmbientCore");
             centerCoreObj.transform.SetParent(transform, false);
             RectTransform coreRt = centerCoreObj.AddComponent<RectTransform>();
             coreRt.anchoredPosition = Vector2.zero;
-            coreRt.sizeDelta = new Vector2(210f, 210f);
+            coreRt.sizeDelta = new Vector2(280f, 280f);
             m_CenterCoreGlow = centerCoreObj.AddComponent<Image>();
             m_CenterCoreGlow.sprite = SpriteFactory.GetSoftGlowOrbSprite();
-            m_CenterCoreGlow.color = new Color(0.35f, 0.75f, 1.0f, 0.16f);
+            m_CenterCoreGlow.color = new Color(0.35f, 0.75f, 1.0f, 0.32f);
             m_CenterCoreGlow.raycastTarget = false;
 
-            // 2. 6 Vibrant Jewel Sphere Colors (Full spectrum rainbow)
+            // 1b. Volumetric Starburst Light Needles (Subtle rotating sparkle over center star)
+            GameObject raysObj = new GameObject("CenterStarRays");
+            raysObj.transform.SetParent(transform, false);
+            m_StarRaysRt = raysObj.AddComponent<RectTransform>();
+            m_StarRaysRt.anchoredPosition = Vector2.zero;
+            m_StarRaysRt.sizeDelta = new Vector2(340f, 340f);
+            m_StarRaysImg = raysObj.AddComponent<Image>();
+            m_StarRaysImg.sprite = SpriteFactory.GetStarburstRaysSprite();
+            m_StarRaysImg.color = new Color(1f, 1f, 1f, 0.28f);
+            m_StarRaysImg.raycastTarget = false;
+
+            // 1c. Center Star Core (Star is built into the Concept 3 background plate)
+            GameObject starCoreObj = new GameObject("Center3DStarCore");
+            starCoreObj.transform.SetParent(transform, false);
+            m_StarCoreRt = starCoreObj.AddComponent<RectTransform>();
+            m_StarCoreRt.anchoredPosition = Vector2.zero;
+            m_StarCoreRt.sizeDelta = new Vector2(116f, 116f);
+            m_StarCoreImg = starCoreObj.AddComponent<Image>();
+            m_StarCoreImg.sprite = SpriteFactory.Get3DStarCoreSprite();
+            m_StarCoreImg.color = Color.clear; // Clear to let background star shine through
+            m_StarCoreImg.raycastTarget = false;
+
+            // 2. 6 Vibrant Striped Candy Cosmos Colors (Pink Swirl, Orange Planet, Lime Mint, Cyan Wave, Purple Bubble, Rainbow)
             Color[] colors = new Color[]
             {
-                SpriteFactory.BlockColors[0], // Ruby Red
-                SpriteFactory.BlockColors[1], // Sunset Orange
-                SpriteFactory.BlockColors[2], // Golden Yellow
-                SpriteFactory.BlockColors[3], // Emerald Green
-                SpriteFactory.BlockColors[4], // Crystal Cyan
-                SpriteFactory.BlockColors[6]  // Amethyst Purple
+                new Color(1.00f, 0.35f, 0.72f), // Pink & White Swirl
+                new Color(1.00f, 0.58f, 0.12f), // Orange & Yellow Striped Planet
+                new Color(0.48f, 0.95f, 0.22f), // Lime Green & White Candy
+                new Color(0.12f, 0.75f, 1.00f), // Blue & Cyan Wave Swirl
+                new Color(0.78f, 0.25f, 0.98f), // Purple & Magenta Striped Bubble
+                new Color(1.00f, 0.82f, 0.20f)  // Rainbow Striped Glossy Sphere
             };
 
             int count = colors.Length; // 6 spheres in the revolving ring
@@ -241,15 +288,15 @@ namespace BoxBlast
                 item.glowImg.color = auraCol;
                 item.glowImg.raycastTarget = false;
 
-                // Main 3D Glossy Sphere Body
+                // Main 3D Glossy Sphere Body (Concept 3 Pixar-grade candy sphere)
                 GameObject sphere = new GameObject($"SphereBody_{s}");
                 sphere.transform.SetParent(root.transform, false);
                 item.sphereObj = sphere;
                 item.sphereRt = sphere.AddComponent<RectTransform>();
                 item.sphereRt.anchoredPosition = Vector2.zero;
-                item.sphereRt.sizeDelta = new Vector2(82f, 82f);
+                item.sphereRt.sizeDelta = new Vector2(94f, 94f);
                 item.sphereImg = sphere.AddComponent<Image>();
-                item.sphereImg.sprite = SpriteFactory.GetBlockSprite(item.baseColor);
+                item.sphereImg.sprite = SpriteFactory.GetConcept3SphereSprite(s);
                 item.sphereImg.raycastTarget = true;
 
                 // Tap / Click Event for bouncy jiggle & sparkle burst
@@ -337,13 +384,37 @@ namespace BoxBlast
                 m_ClusterRt.anchoredPosition = new Vector2(0f, m_BaseCenterY + clusterHover);
             }
 
-            // 3. Center Core Breathing Glow
+            // 3. Center Starburst Core & Rays Animation
             if (m_CenterCoreGlow != null)
             {
                 float corePulse = Mathf.Sin(t * 2.2f);
                 Color cc = m_CenterCoreGlow.color;
-                cc.a = Mathf.Lerp(0.12f, 0.22f, (corePulse + 1f) * 0.5f);
+                cc.a = Mathf.Lerp(0.20f, 0.38f, (corePulse + 1f) * 0.5f);
                 m_CenterCoreGlow.color = cc;
+            }
+            if (m_StarCoreRt != null)
+            {
+                float starScale = 1.0f + 0.08f * Mathf.Sin(t * 2.8f);
+                m_StarCoreRt.localScale = new Vector3(starScale, starScale, 1f);
+                m_StarCoreRt.localEulerAngles = new Vector3(0f, 0f, Mathf.Sin(t * 1.4f) * 5f);
+            }
+            if (m_StarRaysRt != null)
+            {
+                m_StarRaysRt.localEulerAngles = new Vector3(0f, 0f, t * 14f);
+                float rayPulse = Mathf.Sin(t * 2.5f);
+                if (m_StarRaysImg != null)
+                {
+                    Color rc = m_StarRaysImg.color;
+                    rc.a = Mathf.Lerp(0.55f, 0.85f, (rayPulse + 1f) * 0.5f);
+                    m_StarRaysImg.color = rc;
+                }
+            }
+            if (m_OrbitRingsImg != null)
+            {
+                float ringPulse = Mathf.Sin(t * 1.8f);
+                Color ringCol = m_OrbitRingsImg.color;
+                ringCol.a = Mathf.Lerp(0.68f, 0.90f, (ringPulse + 1f) * 0.5f);
+                m_OrbitRingsImg.color = ringCol;
             }
 
             // 4. Periodic Specular Glint Twinkle Timer

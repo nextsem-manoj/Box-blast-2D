@@ -16,7 +16,7 @@ namespace BoxBlast
         public const int BoardHeight = 8;
 
         [Header("Grid Layout Settings")]
-        [SerializeField] private float m_CellSize = 0.65f;
+        [SerializeField] private float m_CellSize = 0.67f;
         [SerializeField] private float m_CellSpacing = 0.04f;
         [SerializeField] private Vector2 m_GridCenter = new Vector2(0f, 0.40f);
 
@@ -27,6 +27,7 @@ namespace BoxBlast
         private Camera m_MainCamera;
         private Coroutine m_ShakeCoroutine;
 
+        public float CellSize => m_CellSize;
         public float TotalCellStep => m_CellSize + m_CellSpacing;
         public Vector2 GridCenter => m_GridCenter;
         public BoosterType ActiveBooster { get; private set; } = BoosterType.None;
@@ -50,6 +51,8 @@ namespace BoxBlast
             }
 
             m_MainCamera = Camera.main;
+            bool isLandscape = Screen.width > Screen.height;
+            UpdateLayout(isLandscape);
             BuildGrid();
         }
 
@@ -92,16 +95,24 @@ namespace BoxBlast
                 m_BoardBgObj = new GameObject("BoardBackground");
                 m_BoardBgObj.transform.SetParent(transform, false);
                 SpriteRenderer bgSr = m_BoardBgObj.AddComponent<SpriteRenderer>();
-                bgSr.sprite = SpriteFactory.GetBoardBackgroundSprite();
+                Sprite frameSprite = Resources.Load<Sprite>("Gameplay_BoardFrame_Concept1");
+                bgSr.sprite = (frameSprite != null) ? frameSprite : SpriteFactory.GetBoardBackgroundSprite();
                 bgSr.sortingOrder = 0;
             }
 
-            float totalWidth = BoardWidth * TotalCellStep + 0.32f;
-            float totalHeight = BoardHeight * TotalCellStep + 0.32f;
-            m_BoardBgObj.transform.position = new Vector3(m_GridCenter.x, m_GridCenter.y, 0f);
-            m_BoardBgObj.transform.localScale = new Vector3(totalWidth, totalHeight, 1f);
+            Sprite curSprite = m_BoardBgObj.GetComponent<SpriteRenderer>()?.sprite;
+            float totalSpan = (BoardWidth - 1) * TotalCellStep;
+            // Gameplay_BoardFrame_Concept1 circular socket centers span exactly 736.92px (X) and 742.04px (Y) on 940 PPU texture (934x945).
+            // Sockets center on texture: (465.94px, 476.87px from bottom). Texture pivot (0.5, 0.5) is at (467.0px, 472.5px).
+            // Offsets from pivot: deltaX = -1.06px, deltaY = +4.37px on 940 PPU.
+            float scaleX = (curSprite != null && curSprite.name.Contains("BoardFrame")) ? (totalSpan / (736.92f / 940f)) : (BoardWidth * TotalCellStep + 0.32f);
+            float scaleY = (curSprite != null && curSprite.name.Contains("BoardFrame")) ? (totalSpan / (742.04f / 940f)) : (BoardHeight * TotalCellStep + 0.32f);
+            float offsetX = (curSprite != null && curSprite.name.Contains("BoardFrame")) ? ((-1.06f / 940f) * scaleX) : 0f;
+            float offsetY = (curSprite != null && curSprite.name.Contains("BoardFrame")) ? ((4.37f / 940f) * scaleY) : 0f;
+            m_BoardBgObj.transform.position = new Vector3(m_GridCenter.x - offsetX, m_GridCenter.y - offsetY, 0f);
+            m_BoardBgObj.transform.localScale = new Vector3(scaleX, scaleY, 1f);
 
-            // 2. Instantiate 9x9 Grid Cells
+            // 2. Instantiate 8x8 Grid Cells
             float startX = m_GridCenter.x - ((BoardWidth - 1) * TotalCellStep * 0.5f);
             float startY = m_GridCenter.y - ((BoardHeight - 1) * TotalCellStep * 0.5f);
 
@@ -129,7 +140,7 @@ namespace BoxBlast
             if (isLandscape)
             {
                 m_GridCenter = new Vector2(-0.35f, 0f);
-                m_CellSize = 0.60f;
+                m_CellSize = 0.56f;
                 m_CellSpacing = 0.04f;
                 if (m_MainCamera != null)
                 {
@@ -139,22 +150,43 @@ namespace BoxBlast
             }
             else
             {
-                m_GridCenter = new Vector2(0f, 0.40f);
-                m_CellSize = 0.65f;
-                m_CellSpacing = 0.04f;
-                if (m_MainCamera != null)
+                bool isLevel = (LevelManager.Instance != null && LevelManager.Instance.IsLevelActive);
+                if (isLevel)
                 {
-                    float aspect = (float)Screen.width / Mathf.Max(1, Screen.height);
-                    m_MainCamera.orthographicSize = Mathf.Max(6.6f, (6.8f / aspect) * 0.5f);
+                    // Adventure Mode: Board is placed comfortably below the Ribbon Header & Objectives Bar
+                    m_GridCenter = new Vector2(0f, -0.58f);
+                    m_CellSize = 0.58f;
+                    m_CellSpacing = 0.04f;
+                    if (m_MainCamera != null)
+                    {
+                        float aspect = (float)Screen.width / Mathf.Max(1, Screen.height);
+                        m_MainCamera.orthographicSize = Mathf.Max(6.6f, (7.3f / aspect) * 0.5f);
+                    }
+                }
+                else
+                {
+                    // Classic Mode: Board is raised & prominent to fill screen with tight, elegant spacing
+                    m_GridCenter = new Vector2(0f, 0.40f);
+                    m_CellSize = 0.67f;
+                    m_CellSpacing = 0.04f;
+                    if (m_MainCamera != null)
+                    {
+                        float aspect = (float)Screen.width / Mathf.Max(1, Screen.height);
+                        m_MainCamera.orthographicSize = Mathf.Max(6.1f, (6.8f / aspect) * 0.5f);
+                    }
                 }
             }
 
             if (m_BoardBgObj != null)
             {
-                float totalWidth = BoardWidth * TotalCellStep + 0.32f;
-                float totalHeight = BoardHeight * TotalCellStep + 0.32f;
-                m_BoardBgObj.transform.position = new Vector3(m_GridCenter.x, m_GridCenter.y, 0f);
-                m_BoardBgObj.transform.localScale = new Vector3(totalWidth, totalHeight, 1f);
+                Sprite curSprite = m_BoardBgObj.GetComponent<SpriteRenderer>()?.sprite;
+                float totalSpan = (BoardWidth - 1) * TotalCellStep;
+                float scaleX = (curSprite != null && curSprite.name.Contains("BoardFrame")) ? (totalSpan / (736.92f / 940f)) : (BoardWidth * TotalCellStep + 0.32f);
+                float scaleY = (curSprite != null && curSprite.name.Contains("BoardFrame")) ? (totalSpan / (742.04f / 940f)) : (BoardHeight * TotalCellStep + 0.32f);
+                float offsetX = (curSprite != null && curSprite.name.Contains("BoardFrame")) ? ((-1.06f / 940f) * scaleX) : 0f;
+                float offsetY = (curSprite != null && curSprite.name.Contains("BoardFrame")) ? ((4.37f / 940f) * scaleY) : 0f;
+                m_BoardBgObj.transform.position = new Vector3(m_GridCenter.x - offsetX, m_GridCenter.y - offsetY, 0f);
+                m_BoardBgObj.transform.localScale = new Vector3(scaleX, scaleY, 1f);
             }
 
             if (m_Cells != null)
@@ -179,6 +211,10 @@ namespace BoxBlast
 
         public Vector3 GetCellWorldPosition(int x, int y)
         {
+            if (m_Cells != null && x >= 0 && x < BoardWidth && y >= 0 && y < BoardHeight && m_Cells[x, y] != null)
+            {
+                return m_Cells[x, y].transform.position;
+            }
             float startX = m_GridCenter.x - ((BoardWidth - 1) * TotalCellStep * 0.5f);
             float startY = m_GridCenter.y - ((BoardHeight - 1) * TotalCellStep * 0.5f);
             return new Vector3(startX + x * TotalCellStep, startY + y * TotalCellStep, 0f);
@@ -442,7 +478,7 @@ namespace BoxBlast
 
             // Check 3x3 Sectors (only if 9x9 board)
             List<Vector2Int> fullSectors = new List<Vector2Int>();
-            if (BoardWidth >= 9 && BoardHeight >= 9)
+            if (m_Cells != null && m_Cells.GetLength(0) >= 9 && m_Cells.GetLength(1) >= 9)
             {
                 for (int sx = 0; sx < 3; sx++)
                 {
@@ -769,7 +805,7 @@ namespace BoxBlast
                 {
                     if (m_Cells[x, y].IsOccupied)
                     {
-                        m_Cells[x, y].Clear(true, delay, false);
+                        m_Cells[x, y].Clear(true, delay, true);
                         delay += 0.015f;
                     }
                 }
@@ -881,6 +917,26 @@ namespace BoxBlast
                 }
             }
             return count;
+        }
+
+        public bool[,] GetOccupancyGrid()
+        {
+            bool[,] grid = new bool[BoardWidth, BoardHeight];
+            if (m_Cells == null) return grid;
+            for (int x = 0; x < BoardWidth; x++)
+            {
+                for (int y = 0; y < BoardHeight; y++)
+                {
+                    grid[x, y] = (m_Cells[x, y] != null && m_Cells[x, y].IsOccupied);
+                }
+            }
+            return grid;
+        }
+
+        public bool IsCellOccupied(int x, int y)
+        {
+            if (x < 0 || x >= BoardWidth || y < 0 || y >= BoardHeight) return true;
+            return m_Cells != null && m_Cells[x, y] != null && m_Cells[x, y].IsOccupied;
         }
 
         public void RefreshAllCellSprites()

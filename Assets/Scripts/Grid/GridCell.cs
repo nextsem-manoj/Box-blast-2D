@@ -20,6 +20,9 @@ namespace BoxBlast
         private SpriteRenderer m_PreviewRenderer;
         private SpriteRenderer m_LineGlowRenderer;
 
+        public const float BlockScale = 0.69f;
+        public const float GemScale = 0.80f;
+
         private GameObject m_BlockObj;
         private GameObject m_PreviewObj;
         private GameObject m_LineGlowObj;
@@ -39,6 +42,11 @@ namespace BoxBlast
             m_BgRenderer = gameObject.AddComponent<SpriteRenderer>();
             m_BgRenderer.sprite = SpriteFactory.GetEmptyCellSprite();
             m_BgRenderer.sortingOrder = 1;
+            Sprite frameCheck = Resources.Load<Sprite>("Gameplay_BoardFrame_Concept1");
+            if (frameCheck != null)
+            {
+                m_BgRenderer.enabled = false;
+            }
             transform.localScale = Vector3.one * (cellSize * 0.98f);
 
             // Preview Ghost Sphere
@@ -46,6 +54,7 @@ namespace BoxBlast
             m_PreviewObj.transform.SetParent(transform, false);
             m_PreviewRenderer = m_PreviewObj.AddComponent<SpriteRenderer>();
             m_PreviewRenderer.sortingOrder = 3;
+            m_PreviewObj.transform.localScale = Vector3.one * BlockScale;
             m_PreviewObj.SetActive(false);
 
             // Line Clear Anticipation Highlight
@@ -61,6 +70,7 @@ namespace BoxBlast
             m_BlockObj.transform.SetParent(transform, false);
             m_BlockRenderer = m_BlockObj.AddComponent<SpriteRenderer>();
             m_BlockRenderer.sortingOrder = 4;
+            m_BlockObj.transform.localScale = Vector3.one * BlockScale;
             m_BlockObj.SetActive(false);
 
             // Embedded Sparkling Gem inside Sphere
@@ -68,7 +78,7 @@ namespace BoxBlast
             m_GemObj.transform.SetParent(m_BlockObj.transform, false);
             m_GemRenderer = m_GemObj.AddComponent<SpriteRenderer>();
             m_GemRenderer.sortingOrder = 6; // Above sphere body (4)
-            m_GemObj.transform.localScale = Vector3.one * 0.58f;
+            m_GemObj.transform.localScale = Vector3.one * GemScale;
             m_GemObj.SetActive(false);
         }
 
@@ -100,7 +110,7 @@ namespace BoxBlast
 
                 if (IsOccupied && m_BlockObj != null)
                 {
-                    m_BlockObj.transform.localScale = Vector3.one;
+                    m_BlockObj.transform.localScale = Vector3.one * BlockScale;
                 }
             }
         }
@@ -113,7 +123,6 @@ namespace BoxBlast
                 elapsed += Time.unscaledDeltaTime * 6.5f;
                 float pulse = 1.0f + Mathf.Sin(elapsed) * 0.08f;
                 if (m_LineGlowObj != null) m_LineGlowObj.transform.localScale = Vector3.one * pulse;
-                if (IsOccupied && m_BlockObj != null) m_BlockObj.transform.localScale = Vector3.one * (1.0f + Mathf.Sin(elapsed) * 0.06f);
                 yield return null;
             }
         }
@@ -125,6 +134,7 @@ namespace BoxBlast
             if (show)
             {
                 m_PreviewRenderer.sprite = SpriteFactory.GetPreviewCellSprite(color);
+                m_PreviewRenderer.color = new Color(1f, 1f, 1f, 0.52f);
                 m_PreviewObj.SetActive(true);
             }
             else
@@ -166,7 +176,7 @@ namespace BoxBlast
             }
             else
             {
-                m_BlockObj.transform.localScale = Vector3.one;
+                m_BlockObj.transform.localScale = Vector3.one * BlockScale;
                 m_IdleCoroutine = StartCoroutine(AnimateIdleBreathing());
             }
         }
@@ -213,7 +223,8 @@ namespace BoxBlast
         }
 
         /// <summary>
-        /// Juicy squash & stretch drop animation for spheres.
+        /// Crisp, snappy placement drop animation for spheres.
+        /// Stays strictly within the golden circular socket boundary.
         /// </summary>
         private IEnumerator AnimatePlaceSquash()
         {
@@ -221,46 +232,31 @@ namespace BoxBlast
             t.localScale = Vector3.zero;
 
             float elapsed = 0f;
-            float popDuration = 0.12f;
+            float popDuration = 0.08f;
 
-            // 1. Pop In
+            // 1. Pop In swiftly to BlockScale
             while (elapsed < popDuration)
             {
                 elapsed += Time.deltaTime;
                 float progress = elapsed / popDuration;
                 float s = Mathf.Sin(progress * Mathf.PI * 0.5f);
-                t.localScale = new Vector3(s * 1.15f, s * 0.85f, 1f); // horizontal squash on impact
+                t.localScale = Vector3.one * (s * BlockScale);
                 yield return null;
             }
 
-            // 2. Rebound Stretch
+            // 2. Subtle micro-settle bounce (strictly within socket rim)
             elapsed = 0f;
-            float reboundDuration = 0.10f;
-            while (elapsed < reboundDuration)
-            {
-                elapsed += Time.deltaTime;
-                float progress = elapsed / reboundDuration;
-                float sx = Mathf.Lerp(1.15f, 0.94f, progress);
-                float sy = Mathf.Lerp(0.85f, 1.08f, progress);
-                t.localScale = new Vector3(sx, sy, 1f);
-                yield return null;
-            }
-
-            // 3. Settle to Round 1.0
-            elapsed = 0f;
-            float settleDuration = 0.08f;
+            float settleDuration = 0.06f;
             while (elapsed < settleDuration)
             {
                 elapsed += Time.deltaTime;
                 float progress = elapsed / settleDuration;
-                float sx = Mathf.Lerp(0.94f, 1.0f, progress);
-                float sy = Mathf.Lerp(1.08f, 1.0f, progress);
-                t.localScale = new Vector3(sx, sy, 1f);
+                float bounce = 1.0f + Mathf.Sin(progress * Mathf.PI) * 0.02f;
+                t.localScale = Vector3.one * (bounce * BlockScale);
                 yield return null;
             }
 
-            t.localScale = Vector3.one;
-            m_IdleCoroutine = StartCoroutine(AnimateIdleBreathing());
+            t.localScale = Vector3.one * BlockScale;
         }
 
         /// <summary>
@@ -298,7 +294,7 @@ namespace BoxBlast
                     scale = Mathf.Lerp(1.35f, 0f, (p - 0.28f) / 0.72f);
                 }
 
-                t.localScale = Vector3.one * scale;
+                t.localScale = Vector3.one * (scale * BlockScale);
 
                 Color c = Color.Lerp(Color.white, origColor, p);
                 c.a = Mathf.Clamp01(1f - p * 1.2f);
@@ -308,26 +304,21 @@ namespace BoxBlast
             }
 
             m_BlockRenderer.color = origColor;
-            t.localScale = Vector3.one;
+            t.localScale = Vector3.one * BlockScale;
             m_BlockObj.SetActive(false);
         }
 
         /// <summary>
-        /// Gentle organic breathing/pulse animation so spheres look alive on the board.
+        /// Sphere stays permanently locked, stable, and perfectly seated inside the circular socket.
+        /// No scale oscillation so balls never bulge out or shrink away.
         /// </summary>
         private IEnumerator AnimateIdleBreathing()
         {
-            Transform t = m_BlockObj.transform;
-            float phaseOffset = (GridX + GridY) * 0.45f;
-
-            while (IsOccupied)
+            if (m_BlockObj != null)
             {
-                float breathe = Mathf.Sin(Time.time * 2.8f + phaseOffset) * 0.035f;
-                t.localScale = new Vector3(1f + breathe, 1f - breathe * 0.5f, 1f);
-                yield return null;
+                m_BlockObj.transform.localScale = Vector3.one * BlockScale;
             }
-
-            t.localScale = Vector3.one;
+            yield break;
         }
     }
 }

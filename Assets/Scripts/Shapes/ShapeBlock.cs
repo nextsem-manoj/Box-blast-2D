@@ -33,7 +33,8 @@ namespace BoxBlast
 
             m_SpriteRenderer.sprite = SpriteFactory.GetBlockSprite(color);
             m_SpriteRenderer.sortingOrder = 10; // Render above grid
-            transform.localScale = Vector3.one * blockSize;
+            float effectiveSize = (GridManager.Instance != null) ? GridManager.Instance.CellSize : blockSize;
+            transform.localScale = Vector3.one * (effectiveSize * 0.98f * GridCell.BlockScale);
 
             EnsureGemObject();
             SetGem(gem);
@@ -47,7 +48,7 @@ namespace BoxBlast
                 m_GemObj.transform.SetParent(transform, false);
                 m_GemRenderer = m_GemObj.AddComponent<SpriteRenderer>();
                 m_GemRenderer.sortingOrder = 12; // Above block sphere
-                m_GemObj.transform.localScale = Vector3.one * 0.58f;
+                m_GemObj.transform.localScale = Vector3.one * GridCell.GemScale;
                 m_GemObj.SetActive(false);
             }
         }

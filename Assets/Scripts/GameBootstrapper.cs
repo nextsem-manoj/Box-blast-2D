@@ -40,7 +40,7 @@ namespace BoxBlast
             }
 
             cam.orthographic = true;
-            cam.orthographicSize = (Screen.width > Screen.height) ? 5.4f : 6.6f;
+            cam.orthographicSize = (Screen.width > Screen.height) ? 5.4f : 6.1f;
             cam.backgroundColor = new Color(0.22f, 0.29f, 0.65f, 1f);
             cam.clearFlags = CameraClearFlags.SolidColor;
             cam.transform.position = new Vector3(0f, 0f, -10f);
@@ -49,6 +49,7 @@ namespace BoxBlast
 
             QualitySettings.antiAliasing = 4;
             QualitySettings.anisotropicFiltering = AnisotropicFiltering.ForceEnable;
+            QualitySettings.globalTextureMipmapLimit = 0;
 
             // Mobile display optimization: prevent screen sleep while thinking
             Screen.sleepTimeout = SleepTimeout.NeverSleep;
@@ -151,6 +152,9 @@ namespace BoxBlast
                 GameObject lmObj = new GameObject("LevelManager");
                 lmObj.AddComponent<LevelManager>();
             }
+
+            // 7b. Ensure SpriteFactory and skins are ready while preserving player's equipped skin
+
 
             // 8. UI Manager (Constructed after all game logic managers are ready)
             if (FindAnyObjectByType<UIManager>() == null)

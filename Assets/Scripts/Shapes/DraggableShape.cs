@@ -20,7 +20,7 @@ namespace BoxBlast
         public bool IsDragging { get; private set; }
 
         [Header("Drag Settings")]
-        [SerializeField] private float m_SlotScale = 0.52f;
+        [SerializeField] private float m_SlotScale = 0.74f;
         [SerializeField] private float m_BoardScale = 1.0f;
         [SerializeField] private float m_DragYOffset = 1.35f;
 
@@ -31,12 +31,17 @@ namespace BoxBlast
 
         // Smooth physics & dynamics
         private float m_CurrentLiftOffset = 0f;
-        private float m_CurrentScale = 0.52f;
+        private float m_CurrentScale = 0.74f;
         private float m_CurrentZAngle = 0f;
         private Vector3 m_LastPos;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetStatics()
+        {
+            ActiveDragShape = null;
+        }
+
+        public static void ResetActiveDrag()
         {
             ActiveDragShape = null;
         }
@@ -52,6 +57,22 @@ namespace BoxBlast
             Data = data;
             SlotPosition = slotPos;
             SlotIndex = slotIndex;
+
+            // Dynamically scale shapes in the pedestal dock so pieces fit nestled
+            // inside the large crystal bowl without overflowing into the sky or adjacent slots!
+            float maxDim = Mathf.Max(data.Width, data.Height);
+            float baseSlotScale = 0.74f;
+            float maxAllowedWorldSpan = 1.55f;
+            float naturalSpan = maxDim * cellSize;
+            if (naturalSpan * baseSlotScale > maxAllowedWorldSpan)
+            {
+                m_SlotScale = maxAllowedWorldSpan / naturalSpan;
+            }
+            else
+            {
+                m_SlotScale = baseSlotScale;
+            }
+
             transform.position = slotPos;
             transform.localScale = Vector3.one * m_SlotScale;
             m_CurrentScale = m_SlotScale;
@@ -79,12 +100,10 @@ namespace BoxBlast
             }
 
             // Configure generous Collider size for mobile touch/click detection
-            // Note: In local space, scale is m_SlotScale (0.52f).
-            // A minimum world touch target of 2.3 units ensures effortless pickup on any mobile touch screen!
-            float minWorldSize = 2.3f;
-            float colWidth = Mathf.Max(data.Width * cellSize, minWorldSize) / m_SlotScale;
-            float colHeight = Mathf.Max(data.Height * cellSize, minWorldSize) / m_SlotScale;
-            m_Collider.size = new Vector2(colWidth, colHeight);
+            // Bound collider width within (1.4f to 2.05f) world units so it never overlaps adjacent pedestal slots (spaced 2.1f apart)
+            float colWorldW = Mathf.Clamp(data.Width * cellSize * m_SlotScale + 0.45f, 1.4f, 2.05f);
+            float colWorldH = Mathf.Clamp(data.Height * cellSize * m_SlotScale + 0.45f, 1.4f, 2.05f);
+            m_Collider.size = new Vector2(colWorldW / m_SlotScale, colWorldH / m_SlotScale);
             m_Collider.offset = Vector2.zero;
             m_Collider.isTrigger = true;
         }
@@ -122,10 +141,22 @@ namespace BoxBlast
                 return;
             }
 
+            // In level mode: do not allow dragging if level is inactive or out of moves
+            if (LevelManager.Instance != null && LevelManager.Instance.IsLevelActive && LevelManager.Instance.MovesRemaining <= 0)
+            {
+                return;
+            }
+
             // Do not drag shape if player is aiming a booster
             if (GridManager.Instance != null && GridManager.Instance.ActiveBooster != BoosterType.None)
             {
                 return;
+            }
+
+            // Clean up invalid ActiveDragShape reference if target object became destroyed or inactive
+            if (ActiveDragShape != null && (!ActiveDragShape.gameObject.activeInHierarchy || !ActiveDragShape.enabled))
+            {
+                ActiveDragShape = null;
             }
 
             HandleInput();
@@ -146,7 +177,7 @@ namespace BoxBlast
                 if (InputHelper.IsPointerOverUI()) return;
 
                 // Effortless touch pickup: Check collider overlap OR proximity to slot box center
-                bool canPickUp = m_Collider.OverlapPoint(pointerWorld) || (Vector2.Distance(pointerWorld, SlotPosition) < 1.35f);
+                bool canPickUp = m_Collider.OverlapPoint(pointerWorld) || (Vector2.Distance(pointerWorld, SlotPosition) < 0.95f);
 
                 if (canPickUp)
                 {
@@ -194,7 +225,7 @@ namespace BoxBlast
             {
                 // Dynamic thumb clearance: taller pieces get more vertical lift so thumb never obscures lower blocks
                 float halfHeight = (Data != null ? Data.Height : 1) * 0.9f * 0.5f;
-                return Mathf.Max(1.4f, halfHeight + 0.65f);
+                return Mathf.Max(m_DragYOffset, halfHeight + 0.65f);
             }
             // On desktop mouse, center slightly above cursor
             return 0.15f;
