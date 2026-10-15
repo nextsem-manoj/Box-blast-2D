@@ -2947,131 +2947,109 @@ namespace BoxBlast
                 Image sImg = sphereObj.AddComponent<Image>();
                 sImg.raycastTarget = false;
 
-                if (!isUnlocked)
+                // 2. Base Sphere Image: Always render vibrant 3D sphere on every level
+                string spName = (i < sphereSpriteNames.Length) ? sphereSpriteNames[i] : "Sphere_3D_Cyan";
+                Sprite sphereSprite = SpriteFactory.LoadOrFallbackSprite(spName);
+                if (sphereSprite != null)
                 {
-                    // Locked: Deep space navy metallic 3D sphere with visible highlights
-                    Sprite blueSphere = SpriteFactory.LoadOrFallbackSprite("Sphere_3D_Blue");
-                    if (blueSphere != null)
-                    {
-                        sImg.sprite = blueSphere;
-                        sImg.color = new Color(0.28f, 0.38f, 0.62f, 1f);
-                    }
-                    else
-                    {
-                        sImg.sprite = SpriteFactory.GetCircleSprite(new Color(0.18f, 0.24f, 0.42f, 1f));
-                    }
-
-                    // Level Number Text in top half of locked sphere (large & bold for mobile screens)
-                    GameObject numObj = CreateText(btnObj.transform, new Vector2(0f, 20f), new Vector2(104f, 48f), targetLvl.ToString(), 42, FontStyle.Bold, Color.white, TextAnchor.MiddleCenter, m_CandyFont);
-                    Text numTxt = numObj.GetComponent<Text>();
-                    MakeTextCrisp(numTxt, new Color(0.04f, 0.08f, 0.20f, 0.95f), 1.2f);
-
-                    // Clean Golden Padlock Icon in bottom half of locked sphere
-                    GameObject lockObj = new GameObject("LockIcon");
-                    lockObj.transform.SetParent(btnObj.transform, false);
-                    RectTransform lRt = lockObj.AddComponent<RectTransform>();
-                    lRt.anchoredPosition = new Vector2(0f, -24f);
-                    lRt.sizeDelta = new Vector2(40f, 46f);
-                    Image lImg = lockObj.AddComponent<Image>();
-                    lImg.sprite = SpriteFactory.LoadOrFallbackSprite("Wardrobe_Icon_Lock");
-                    if (lImg.sprite == null) lImg.sprite = GemIconFactory.GetStarSprite(true);
-                    lImg.color = Color.white;
-                    lImg.raycastTarget = false;
+                    sImg.sprite = sphereSprite;
+                    sImg.color = isUnlocked ? Color.white : new Color(0.85f, 0.88f, 0.95f, 0.95f);
                 }
                 else
                 {
-                    // Unlocked (Active or Completed): Rich vibrant 3D sphere
-                    string spName = (i < sphereSpriteNames.Length) ? sphereSpriteNames[i] : "Sphere_3D_Cyan";
-                    Sprite sphereSprite = SpriteFactory.LoadOrFallbackSprite(spName);
-                    if (sphereSprite != null)
+                    sImg.sprite = SpriteFactory.GetCircleSprite(new Color(0.2f, 0.7f, 1f));
+                }
+
+                // Level Number Text in Center of Sphere (prominent & bold)
+                GameObject numObj = CreateText(btnObj.transform, Vector2.zero, new Vector2(110f, 70f), targetLvl.ToString(), isCurrentActive ? 52 : 46, FontStyle.Bold, Color.white, TextAnchor.MiddleCenter, m_CandyFont);
+                Text numTxt = numObj.GetComponent<Text>();
+                MakeTextCrisp(numTxt, new Color(0.02f, 0.04f, 0.14f, 0.95f), 1.2f);
+
+                // If Locked: Add small sleek golden padlock badge on top-right corner of sphere
+                if (!isUnlocked)
+                {
+                    GameObject lockBadge = new GameObject("LockBadge");
+                    lockBadge.transform.SetParent(btnObj.transform, false);
+                    RectTransform lbRt = lockBadge.AddComponent<RectTransform>();
+                    lbRt.anchoredPosition = new Vector2(34f, 34f);
+                    lbRt.sizeDelta = new Vector2(34f, 38f);
+                    Image lbImg = lockBadge.AddComponent<Image>();
+                    lbImg.sprite = SpriteFactory.LoadOrFallbackSprite("Wardrobe_Icon_Lock");
+                    if (lbImg.sprite == null) lbImg.sprite = GemIconFactory.GetStarSprite(true);
+                    lbImg.color = new Color(1f, 0.90f, 0.35f, 0.98f);
+                    lbImg.raycastTarget = false;
+                }
+
+                // Active Play Badge above the sphere
+                if (isCurrentActive)
+                {
+                    GameObject playBadgeObj = new GameObject("PlayBadge");
+                    playBadgeObj.transform.SetParent(btnObj.transform, false);
+                    RectTransform pbRt = playBadgeObj.AddComponent<RectTransform>();
+                    pbRt.anchoredPosition = new Vector2(0f, 74f);
+                    pbRt.sizeDelta = new Vector2(118f, 44f);
+
+                    Image pbImg = playBadgeObj.AddComponent<Image>();
+                    Sprite pbs = SpriteFactory.LoadOrFallbackSprite("PlayBadge3D");
+                    if (pbs != null)
                     {
-                        sImg.sprite = sphereSprite;
-                        sImg.color = Color.white;
+                        pbImg.sprite = pbs;
+                        pbImg.color = Color.white;
                     }
                     else
                     {
-                        sImg.sprite = SpriteFactory.GetCircleSprite(new Color(0.2f, 0.7f, 1f));
+                        pbImg.sprite = SpriteFactory.GetPillSprite(new Color(1.0f, 0.75f, 0.12f, 1f));
                     }
+                    pbImg.raycastTarget = false;
 
-                    // Level Number Text in Center of Sphere (prominent & juicy for mobile)
-                    GameObject numObj = CreateText(btnObj.transform, Vector2.zero, new Vector2(110f, 70f), targetLvl.ToString(), isCurrentActive ? 52 : 46, FontStyle.Bold, Color.white, TextAnchor.MiddleCenter, m_CandyFont);
-                    Text numTxt = numObj.GetComponent<Text>();
-                    MakeTextCrisp(numTxt, new Color(0.02f, 0.04f, 0.14f, 0.95f), 1.2f);
-
-                    if (isCurrentActive)
-                    {
-                        // Active Play Badge above the sphere
-                        GameObject playBadgeObj = new GameObject("PlayBadge");
-                        playBadgeObj.transform.SetParent(btnObj.transform, false);
-                        RectTransform pbRt = playBadgeObj.AddComponent<RectTransform>();
-                        pbRt.anchoredPosition = new Vector2(0f, 74f);
-                        pbRt.sizeDelta = new Vector2(118f, 44f);
-
-                        Image pbImg = playBadgeObj.AddComponent<Image>();
-                        Sprite pbs = SpriteFactory.LoadOrFallbackSprite("PlayBadge3D");
-                        if (pbs != null)
-                        {
-                            pbImg.sprite = pbs;
-                            pbImg.color = Color.white;
-                        }
-                        else
-                        {
-                            pbImg.sprite = SpriteFactory.GetPillSprite(new Color(1.0f, 0.75f, 0.12f, 1f));
-                        }
-                        pbImg.raycastTarget = false;
-
-                        GameObject playTxtObj = CreateText(playBadgeObj.transform, Vector2.zero, new Vector2(118f, 42f), "PLAY", 24, FontStyle.Bold, Color.white, TextAnchor.MiddleCenter, m_CandyFont);
-                        Text playTxt = playTxtObj.GetComponent<Text>();
-                        MakeTextCrisp(playTxt, new Color(0.55f, 0.25f, 0.02f, 0.95f), 1.0f);
-                    }
-
-                    // Stars Display: If level has earned stars, show prominent, gorgeous 3D gold jewel stars
-                    if (stars > 0)
-                    {
-                        GameObject starsTray = new GameObject("StarsTray");
-                        starsTray.transform.SetParent(btnObj.transform, false);
-                        RectTransform stRt = starsTray.AddComponent<RectTransform>();
-                        stRt.anchoredPosition = new Vector2(0f, -74f);
-                        stRt.sizeDelta = new Vector2(168f, 54f);
-
-                        // Polished royal navy glass pill with golden rim (replaces harsh pitch-black box)
-                        Image stBg = starsTray.AddComponent<Image>();
-                        stBg.sprite = SpriteFactory.GetRoundedButtonSprite(new Color(0.06f, 0.14f, 0.32f, 0.88f), new Color(0.98f, 0.82f, 0.25f, 0.90f), 0.10f);
-                        stBg.raycastTarget = false;
-
-                        // Star 1 (Left: 48x48, tilted +9°)
-                        GameObject s1 = new GameObject("Star_1");
-                        s1.transform.SetParent(starsTray.transform, false);
-                        RectTransform s1Rt = s1.AddComponent<RectTransform>();
-                        s1Rt.anchoredPosition = new Vector2(-46f, 1f);
-                        s1Rt.sizeDelta = new Vector2(48f, 48f);
-                        s1Rt.localEulerAngles = new Vector3(0f, 0f, 9f);
-                        Image s1Img = s1.AddComponent<Image>();
-                        s1Img.sprite = GemIconFactory.GetStarSprite(stars >= 1);
-                        s1Img.raycastTarget = false;
-
-                        // Star 2 (Center Hero Crown: 58x58, elevated at Y = 7)
-                        GameObject s2 = new GameObject("Star_2");
-                        s2.transform.SetParent(starsTray.transform, false);
-                        RectTransform s2Rt = s2.AddComponent<RectTransform>();
-                        s2Rt.anchoredPosition = new Vector2(0f, 7f);
-                        s2Rt.sizeDelta = new Vector2(58f, 58f);
-                        Image s2Img = s2.AddComponent<Image>();
-                        s2Img.sprite = GemIconFactory.GetStarSprite(stars >= 2);
-                        s2Img.raycastTarget = false;
-
-                        // Star 3 (Right: 48x48, tilted -9°)
-                        GameObject s3 = new GameObject("Star_3");
-                        s3.transform.SetParent(starsTray.transform, false);
-                        RectTransform s3Rt = s3.AddComponent<RectTransform>();
-                        s3Rt.anchoredPosition = new Vector2(46f, 1f);
-                        s3Rt.sizeDelta = new Vector2(48f, 48f);
-                        s3Rt.localEulerAngles = new Vector3(0f, 0f, -9f);
-                        Image s3Img = s3.AddComponent<Image>();
-                        s3Img.sprite = GemIconFactory.GetStarSprite(stars >= 3);
-                        s3Img.raycastTarget = false;
-                    }
+                    GameObject playTxtObj = CreateText(playBadgeObj.transform, Vector2.zero, new Vector2(118f, 42f), "PLAY", 24, FontStyle.Bold, Color.white, TextAnchor.MiddleCenter, m_CandyFont);
+                    Text playTxt = playTxtObj.GetComponent<Text>();
+                    MakeTextCrisp(playTxt, new Color(0.55f, 0.25f, 0.02f, 0.95f), 1.0f);
                 }
+
+                // 3. Stars Display Tray: ALWAYS visible on every level (gold stars for earned, dark/empty stars for unearned)
+                GameObject starsTray = new GameObject("StarsTray");
+                starsTray.transform.SetParent(btnObj.transform, false);
+                RectTransform stRt = starsTray.AddComponent<RectTransform>();
+                stRt.anchoredPosition = new Vector2(0f, -74f);
+                stRt.sizeDelta = new Vector2(168f, 54f);
+
+                // Polished royal navy glass pill with golden rim
+                Image stBg = starsTray.AddComponent<Image>();
+                stBg.sprite = SpriteFactory.GetRoundedButtonSprite(new Color(0.06f, 0.14f, 0.32f, 0.88f), new Color(0.98f, 0.82f, 0.25f, 0.90f), 0.10f);
+                stBg.raycastTarget = false;
+
+                // Star 1 (Left: 48x48, tilted +9°)
+                GameObject s1 = new GameObject("Star_1");
+                s1.transform.SetParent(starsTray.transform, false);
+                RectTransform s1Rt = s1.AddComponent<RectTransform>();
+                s1Rt.anchoredPosition = new Vector2(-46f, 1f);
+                s1Rt.sizeDelta = new Vector2(48f, 48f);
+                s1Rt.localEulerAngles = new Vector3(0f, 0f, 9f);
+                Image s1Img = s1.AddComponent<Image>();
+                s1Img.sprite = GemIconFactory.GetStarSprite(stars >= 1);
+                s1Img.raycastTarget = false;
+
+                // Star 2 (Center Hero Crown: 58x58, elevated at Y = 7)
+                GameObject s2 = new GameObject("Star_2");
+                s2.transform.SetParent(starsTray.transform, false);
+                RectTransform s2Rt = s2.AddComponent<RectTransform>();
+                s2Rt.anchoredPosition = new Vector2(0f, 7f);
+                s2Rt.sizeDelta = new Vector2(58f, 58f);
+                Image s2Img = s2.AddComponent<Image>();
+                s2Img.sprite = GemIconFactory.GetStarSprite(stars >= 2);
+                s2Img.raycastTarget = false;
+
+                // Star 3 (Right: 48x48, tilted -9°)
+                GameObject s3 = new GameObject("Star_3");
+                s3.transform.SetParent(starsTray.transform, false);
+                RectTransform s3Rt = s3.AddComponent<RectTransform>();
+                s3Rt.anchoredPosition = new Vector2(46f, 1f);
+                s3Rt.sizeDelta = new Vector2(48f, 48f);
+                s3Rt.localEulerAngles = new Vector3(0f, 0f, -9f);
+                Image s3Img = s3.AddComponent<Image>();
+                s3Img.sprite = GemIconFactory.GetStarSprite(stars >= 3);
+                s3Img.raycastTarget = false;
 
                 // 3. Invisible Button Overlay for Touch Interaction
                 Image bImg = btnObj.AddComponent<Image>();
