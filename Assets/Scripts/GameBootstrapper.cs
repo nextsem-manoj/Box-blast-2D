@@ -153,8 +153,20 @@ namespace BoxBlast
                 lmObj.AddComponent<LevelManager>();
             }
 
-            // 7b. Ensure SpriteFactory and skins are ready while preserving player's equipped skin
+            // 7b. Ensure SpriteFactory and skins are ready with default Classic multi-color spheres
+            SpriteFactory.PrewarmAll();
+            if (PlayerPrefs.GetInt("SkinInitialized_V2", 0) == 0)
+            {
+                PlayerPrefs.SetInt("SkinInitialized_V2", 1);
+                SkinManager.ResetToDefaultClassic();
+            }
 
+            // 7c. Achievement Manager
+            if (FindAnyObjectByType<AchievementManager>() == null)
+            {
+                GameObject achObj = new GameObject("AchievementManager");
+                achObj.AddComponent<AchievementManager>();
+            }
 
             // 8. UI Manager (Constructed after all game logic managers are ready)
             if (FindAnyObjectByType<UIManager>() == null)

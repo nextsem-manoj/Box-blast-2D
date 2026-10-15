@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
@@ -26,6 +27,8 @@ namespace BoxBlast
         private GameObject m_CoinsWalletObj;
         private GameObject m_SettingsBtnObj;
         private GameObject m_HomeBtnObj;
+        private GameObject m_HeaderBallSkinBtnObj;
+        private Image m_HeaderBallSkinImg;
         private GameObject m_BoosterSidebarObj;
         private GameObject m_ClassicHUD;
         private GameObject m_LevelHUD;
@@ -133,6 +136,13 @@ namespace BoxBlast
         private Text m_ModeCardClassicBestText;
         private Text m_HomeClassicBadgeText;
         private Text m_HomeAdventureBadgeText;
+        private Image m_HomeEquippedBallIcon;
+        private Text m_HomeEquippedBallNameText;
+        private GameObject m_HomeCenterBallShowcase;
+        private Image m_HomeCenterBallImage;
+        private RectTransform m_HomeBallDesignsPillRt;
+        private RectTransform m_HomeCenterBallRt;
+        private RectTransform m_HomeBallDesignsPromptRt;
         private Text m_DailyStreakText;
 
         // Adventure Gem Objectives in Level HUD
@@ -153,6 +163,33 @@ namespace BoxBlast
 
         // Shop Coin Balance Text
         private Text m_ShopCoinsText;
+
+        // Dynamic Juice: Low Moves Alert
+        private Coroutine m_LowMovesCoroutine;
+
+        // Dynamic Juice: First-Time Tutorial Guide
+        private GameObject m_TutorialOverlayObj;
+        private RectTransform m_TutorialHandRt;
+        private Coroutine m_TutorialAnimCoroutine;
+        private bool m_IsTutorialActive = false;
+
+        // Dynamic Juice: Combo & Multi-line Callouts
+        private GameObject m_ComboCalloutObj;
+        private RectTransform m_ComboCalloutRt;
+        private Text m_ComboCalloutText;
+        private Image m_ComboCalloutBg;
+        private Coroutine m_ComboCalloutCoroutine;
+
+        // Meta Progression: Achievements & Quests
+        private GameObject m_AchievementToastObj;
+        private RectTransform m_AchievementToastRt;
+        private Text m_AchievementToastTitle;
+        private Text m_AchievementToastDesc;
+        private Coroutine m_AchievementToastCoroutine;
+        private GameObject m_AchievementsModal;
+        private Transform m_AchievementsListContainer;
+        private Text m_AchievementsUnclaimedBadgeText;
+        private GameObject m_HomeAchievementsBtn;
 
         // Layout Tracking
         private bool m_IsLandscape = true;
@@ -219,6 +256,8 @@ namespace BoxBlast
         private void OnDestroy()
         {
             if (Instance == this) Instance = null;
+            SkinManager.OnSkinChanged -= HandleSkinChangedForHome;
+            SkinManager.OnSkinChanged -= HandleSkinChangedForHeader;
         }
 
         private void Update()
@@ -322,7 +361,7 @@ namespace BoxBlast
                     m_CanvasScaler.referenceResolution = new Vector2(1080, 1920);
                     m_CanvasScaler.matchWidthOrHeight = 0f;
                 }
-                m_CanvasScaler.dynamicPixelsPerUnit = 2.5f;
+                m_CanvasScaler.dynamicPixelsPerUnit = 4.0f;
             }
 
             if (GridManager.Instance != null) GridManager.Instance.UpdateLayout(isLandscape);
@@ -352,59 +391,64 @@ namespace BoxBlast
                 }
             }
 
-            // 0. Home Button (< HOME): Top-Left Corner
+            // 0. Home Button: Top-Left Cyan Crystal Gem Button (Option 2 Design B)
             if (m_HomeBtnObj != null)
             {
                 RectTransform rt = m_HomeBtnObj.GetComponent<RectTransform>();
                 rt.anchorMin = new Vector2(0f, 1f);
                 rt.anchorMax = new Vector2(0f, 1f);
                 rt.pivot = new Vector2(0f, 1f);
-                float xPos = isLandscape ? (30 + safeLeft) : (35 + safeLeft);
-                float yPos = isLandscape ? -(30 + safeTop) : -(45 + safeTop);
+                float xPos = isLandscape ? (35 + safeLeft) : (38 + safeLeft);
+                float yPos = isLandscape ? -(20 + safeTop) : -(38 + safeTop);
                 rt.anchoredPosition = new Vector2(xPos, yPos);
             }
 
-            // 1. Best Score (Crown + High Score): Right next to Home button
-            if (m_BestScoreObj != null)
-            {
-                RectTransform rt = m_BestScoreObj.GetComponent<RectTransform>();
-                rt.anchorMin = new Vector2(0f, 1f);
-                rt.anchorMax = new Vector2(0f, 1f);
-                rt.pivot = new Vector2(0f, 1f);
-                float xPos = isLandscape ? (170 + safeLeft) : (178 + safeLeft);
-                float yPos = isLandscape ? -(30 + safeTop) : -(45 + safeTop);
-                rt.anchoredPosition = new Vector2(xPos, yPos);
-            }
-
-            // 2. Settings Gear: Top-Right Corner
+            // 1. Settings Gear: Top-Right Golden Gear Button (Option 2 Design B)
             if (m_SettingsBtnObj != null)
             {
                 RectTransform rt = m_SettingsBtnObj.GetComponent<RectTransform>();
                 rt.anchorMin = new Vector2(1f, 1f);
                 rt.anchorMax = new Vector2(1f, 1f);
                 rt.pivot = new Vector2(1f, 1f);
-                rt.anchoredPosition = new Vector2(-(45 + safeRight), -(45 + safeTop));
+                float xPos = isLandscape ? -(35 + safeRight) : -(38 + safeRight);
+                float yPos = isLandscape ? -(20 + safeTop) : -(38 + safeTop);
+                rt.anchoredPosition = new Vector2(xPos, yPos);
             }
 
-            // 3. Current Score (Player's score): Top Center
+            // 1b. Active Ball Skin Sphere: Beside Settings Gear on Top-Right (Option 2 Design B + Ball Preview)
+            if (m_HeaderBallSkinBtnObj != null)
+            {
+                RectTransform rt = m_HeaderBallSkinBtnObj.GetComponent<RectTransform>();
+                rt.anchorMin = new Vector2(1f, 1f);
+                rt.anchorMax = new Vector2(1f, 1f);
+                rt.pivot = new Vector2(1f, 1f);
+                float xPos = isLandscape ? -(132 + safeRight) : -(142 + safeRight);
+                float yPos = isLandscape ? -(20 + safeTop) : -(41 + safeTop);
+                rt.anchoredPosition = new Vector2(xPos, yPos);
+            }
+
+            // 2. Current Score Hero Plaque with Crown and Best Score ribbon: Top Center (Option 2 Design B)
             if (m_ScoreCardObj != null)
             {
                 RectTransform rt = m_ScoreCardObj.GetComponent<RectTransform>();
                 rt.anchorMin = new Vector2(0.5f, 1f);
                 rt.anchorMax = new Vector2(0.5f, 1f);
                 rt.pivot = new Vector2(0.5f, 1f);
-                float yPos = isLandscape ? -(35 + safeTop) : -(85 + safeTop);
+                float yPos = isLandscape ? -(10 + safeTop) : -(16 + safeTop);
                 rt.anchoredPosition = new Vector2(0, yPos);
             }
 
-            // 4. Adventure Level HUD: Concept 1 Golden Arcade Header Banner flush to top
+            // 4. Adventure Level HUD: Concept 1 Golden Arcade Header Banner with safe area padding
             if (m_LevelHUD != null)
             {
                 RectTransform rt = m_LevelHUD.GetComponent<RectTransform>();
                 rt.anchorMin = new Vector2(0.5f, 1f);
                 rt.anchorMax = new Vector2(0.5f, 1f);
                 rt.pivot = new Vector2(0.5f, 1f);
-                rt.anchoredPosition = Vector2.zero;
+                // Guarantee breathing room for Android punch-hole selfie cameras and status bars
+                float minTopNotchPad = 26f;
+                float hudY = isLandscape ? 0f : -Mathf.Max(safeTop * 0.5f, minTopNotchPad);
+                rt.anchoredPosition = new Vector2(0f, hudY);
             }
 
             if (m_GemObjectivesBar != null)
@@ -412,8 +456,9 @@ namespace BoxBlast
                 RectTransform gobRt = m_GemObjectivesBar.GetComponent<RectTransform>();
                 if (gobRt != null)
                 {
-                    gobRt.anchoredPosition = isLandscape ? new Vector2(0f, -145f) : new Vector2(0f, -550f);
-                    gobRt.sizeDelta = new Vector2(760f, 76f);
+                    float objY = isLandscape ? -145f : -535f;
+                    gobRt.anchoredPosition = new Vector2(0f, objY);
+                    gobRt.sizeDelta = new Vector2(880f, 118f);
                 }
             }
 
@@ -550,29 +595,32 @@ namespace BoxBlast
                 m_CanvasScaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
                 m_CanvasScaler.referenceResolution = new Vector2(1920, 1080);
                 m_CanvasScaler.matchWidthOrHeight = 0.5f;
-                m_CanvasScaler.dynamicPixelsPerUnit = 2.5f;
+                m_CanvasScaler.dynamicPixelsPerUnit = 4.0f;
                 canvasObj.AddComponent<GraphicRaycaster>();
             }
             else
             {
                 m_CanvasScaler = canvas.GetComponent<CanvasScaler>();
-                if (m_CanvasScaler != null) m_CanvasScaler.dynamicPixelsPerUnit = 2.5f;
+                if (m_CanvasScaler != null) m_CanvasScaler.dynamicPixelsPerUnit = 4.0f;
             }
 
             m_RootCanvas = canvas.transform;
             m_Raycaster = canvas.GetComponent<GraphicRaycaster>();
 
-            // 0. Top-Left: Home Button (matching Adventure < HOME)
+            // 0. Top-Left: Home Button (Option 2 Design B: 3D Cyan Crystal Gem Button)
             BuildHomeButton();
 
-            // 1. Top-Left: Best Score (👑 + Gold Score matching Image 1)
-            BuildBestScoreHUD();
-
-            // 2. Top-Right: Settings Gear Button (Clean gear icon matching Image 1)
+            // 1. Top-Right: Settings Gear Button (Option 2 Design B: 3D Golden Gear Button)
             BuildSettingsButton();
 
-            // 3. Top-Center: Current Score (Big White Bold Number matching Image 1)
+            // 1b. Top-Right: Active Ball Skin Sphere Button (Option 2 Design B + 3D Ball Preview)
+            BuildHeaderBallSkinButton();
+
+            // 2. Top-Center: Current Score Hero Plaque (Option 2 Design B: 3D Royal Golden Arch Plaque)
             BuildScoreCard();
+
+            // 3. Integrated Best Score Ribbon (Option 2 Design B: Hanging Golden Ribbon on Plaque)
+            BuildBestScoreHUD();
 
             // 4. Modals & Screens
             BuildSettingsModal();
@@ -583,6 +631,10 @@ namespace BoxBlast
             BuildVictoryModal();
             BuildDefeatModal();
             BuildSkinWardrobeModal();
+            BuildAchievementsModal();
+            BuildAchievementToastUI();
+            BuildComboCalloutUI();
+            BuildTutorialOverlay();
 
             m_IsLandscape = Screen.width > Screen.height;
             ApplyOrientationLayout(m_IsLandscape);
@@ -591,43 +643,24 @@ namespace BoxBlast
 
         private void BuildBestScoreHUD()
         {
-            m_BestScoreObj = new GameObject("BestScoreTopLeft");
-            m_BestScoreObj.transform.SetParent(m_RootCanvas, false);
+            m_BestScoreObj = new GameObject("BestScoreRibbon");
+            Transform parentTransform = (m_ScoreCardObj != null) ? m_ScoreCardObj.transform : m_RootCanvas;
+            m_BestScoreObj.transform.SetParent(parentTransform, false);
 
             RectTransform rt = m_BestScoreObj.AddComponent<RectTransform>();
-            rt.anchorMin = new Vector2(0f, 1f);
-            rt.anchorMax = new Vector2(0f, 1f);
-            rt.pivot = new Vector2(0f, 1f);
-            rt.sizeDelta = new Vector2(250, 62);
+            rt.anchorMin = new Vector2(0.5f, 0f);
+            rt.anchorMax = new Vector2(0.5f, 0f);
+            rt.pivot = new Vector2(0.5f, 0.5f);
+            // Positioned right on the golden ribbon surface of Option 2 Design B (aligned with ribbon)
+            rt.anchoredPosition = new Vector2(18f, 32f);
+            rt.sizeDelta = new Vector2(280f, 44f);
 
-            // Translucent Royal Navy Pill Badge to frame the Crown and Score with crisp contrast
-            Image bsBg = m_BestScoreObj.AddComponent<Image>();
-            bsBg.sprite = SpriteFactory.GetPillBadgeSprite(new Color(0.04f, 0.09f, 0.22f, 0.85f));
-            bsBg.raycastTarget = false;
-
-            // Crown Icon (Golden crown matching Image 1)
-            GameObject crownIcon = new GameObject("CrownIcon");
-            crownIcon.transform.SetParent(m_BestScoreObj.transform, false);
-            RectTransform cIconRt = crownIcon.AddComponent<RectTransform>();
-            cIconRt.anchorMin = new Vector2(0f, 0.5f);
-            cIconRt.anchorMax = new Vector2(0f, 0.5f);
-            cIconRt.pivot = new Vector2(0f, 0.5f);
-            cIconRt.anchoredPosition = new Vector2(10, 0);
-            cIconRt.sizeDelta = new Vector2(46, 46);
-            Image cIconImg = crownIcon.AddComponent<Image>();
-            cIconImg.sprite = GemIconFactory.GetCrownSprite();
-            cIconImg.raycastTarget = false;
-
-            // Best Score Value (Bold gold/yellow text matching Image 1)
             int best = (GameManager.Instance != null) ? GameManager.Instance.BestScore : 0;
-            GameObject bestObj = CreateText(m_BestScoreObj.transform, new Vector2(62, 0), new Vector2(180, 56), best.ToString("N0"), 38, FontStyle.Bold, new Color(1.0f, 0.88f, 0.25f), TextAnchor.MiddleLeft);
-            RectTransform btRt = bestObj.GetComponent<RectTransform>();
-            btRt.anchorMin = new Vector2(0f, 0.5f);
-            btRt.anchorMax = new Vector2(0f, 0.5f);
-            btRt.pivot = new Vector2(0f, 0.5f);
-            btRt.anchoredPosition = new Vector2(62, 0);
+            Font candyFont = (m_CandyFont != null) ? m_CandyFont : m_DefaultFont;
+            GameObject bestObj = CreateText(m_BestScoreObj.transform, Vector2.zero, new Vector2(280f, 44f), $"BEST: {best:N0}", 27, FontStyle.Bold, new Color(0.38f, 0.18f, 0.02f, 1.0f), TextAnchor.MiddleCenter, candyFont);
             m_BestScoreText = bestObj.GetComponent<Text>();
-            MakeTextCrisp(m_BestScoreText, new Color(0.35f, 0.16f, 0.02f, 0.95f), 1.2f);
+            // Crisp warm golden embossed highlight shadow underneath
+            MakeTextCrisp(m_BestScoreText, new Color(1.0f, 0.95f, 0.70f, 0.75f), 0.8f);
         }
 
         private void BuildSettingsButton()
@@ -639,28 +672,89 @@ namespace BoxBlast
             rt.anchorMin = new Vector2(1f, 1f);
             rt.anchorMax = new Vector2(1f, 1f);
             rt.pivot = new Vector2(1f, 1f);
-            rt.sizeDelta = new Vector2(72, 72);
+            rt.sizeDelta = new Vector2(92f, 92f);
 
-            // Transparent touch target for effortless tapping
+            // Option 2 (Design B): 3D Golden Gear Cogwheel Settings Button
             Image bg = m_SettingsBtnObj.AddComponent<Image>();
-            bg.color = new Color(1f, 1f, 1f, 0.001f);
+            bg.sprite = SpriteFactory.GetGoldenGearSettingsButtonSprite();
             bg.raycastTarget = true;
 
             Button btn = m_SettingsBtnObj.AddComponent<Button>();
-            btn.onClick.AddListener(OpenSettings);
+            btn.targetGraphic = bg;
+            btn.onClick.AddListener(() =>
+            {
+                if (SoundManager.Instance != null) SoundManager.Instance.PlayButtonClick();
+                HapticManager.TriggerLight();
+                StartCoroutine(AnimateButtonPress(rt, () =>
+                {
+                    OpenSettings();
+                }));
+            });
+        }
 
-            // Crisp Gear Icon matching Image 1
-            GameObject iconObj = new GameObject("GearIcon");
-            iconObj.transform.SetParent(m_SettingsBtnObj.transform, false);
-            RectTransform iconRt = iconObj.AddComponent<RectTransform>();
-            iconRt.anchorMin = new Vector2(0.5f, 0.5f);
-            iconRt.anchorMax = new Vector2(0.5f, 0.5f);
-            iconRt.anchoredPosition = Vector2.zero;
-            iconRt.sizeDelta = new Vector2(58, 58);
-            Image iconImg = iconObj.AddComponent<Image>();
-            iconImg.sprite = GemIconFactory.GetGearSprite();
-            iconImg.color = new Color(0.88f, 0.94f, 1.0f, 0.95f);
-            iconImg.raycastTarget = false;
+        private void BuildHeaderBallSkinButton()
+        {
+            m_HeaderBallSkinBtnObj = new GameObject("HeaderBallSkinButton");
+            m_HeaderBallSkinBtnObj.transform.SetParent(m_RootCanvas, false);
+
+            RectTransform rt = m_HeaderBallSkinBtnObj.AddComponent<RectTransform>();
+            rt.anchorMin = new Vector2(1f, 1f);
+            rt.anchorMax = new Vector2(1f, 1f);
+            rt.pivot = new Vector2(1f, 1f);
+            rt.sizeDelta = new Vector2(86f, 86f);
+
+            // 1. Subtle Golden/Cyan Ring Backing matching Option 2 design
+            Image ringBg = m_HeaderBallSkinBtnObj.AddComponent<Image>();
+            ringBg.sprite = SpriteFactory.GetCircleButtonSprite(new Color(0.06f, 0.12f, 0.28f, 0.90f), new Color(1.0f, 0.84f, 0.24f, 0.95f), 0.10f);
+            ringBg.raycastTarget = true;
+
+            // 2. 3D Ball Skin Icon
+            GameObject ballObj = new GameObject("BallIcon");
+            ballObj.transform.SetParent(m_HeaderBallSkinBtnObj.transform, false);
+            RectTransform ballRt = ballObj.AddComponent<RectTransform>();
+            ballRt.anchorMin = new Vector2(0.5f, 0.5f);
+            ballRt.anchorMax = new Vector2(0.5f, 0.5f);
+            ballRt.anchoredPosition = Vector2.zero;
+            ballRt.sizeDelta = new Vector2(68f, 68f);
+
+            m_HeaderBallSkinImg = ballObj.AddComponent<Image>();
+            m_HeaderBallSkinImg.raycastTarget = false;
+            UpdateHeaderBallSkinPreview();
+
+            // 3. Button Click Action: Opens Ball Skin Wardrobe
+            Button btn = m_HeaderBallSkinBtnObj.AddComponent<Button>();
+            btn.targetGraphic = ringBg;
+            btn.onClick.AddListener(() =>
+            {
+                if (SoundManager.Instance != null) SoundManager.Instance.PlayButtonClick();
+                HapticManager.TriggerLight();
+                StartCoroutine(AnimateButtonPress(rt, () =>
+                {
+                    OpenSkinWardrobe();
+                }));
+            });
+
+            SkinManager.OnSkinChanged -= HandleSkinChangedForHeader;
+            SkinManager.OnSkinChanged += HandleSkinChangedForHeader;
+        }
+
+        private void HandleSkinChangedForHeader(BallSkinType skin)
+        {
+            UpdateHeaderBallSkinPreview();
+        }
+
+        private void UpdateHeaderBallSkinPreview()
+        {
+            if (m_HeaderBallSkinImg != null)
+            {
+                BallSkinType equipped = SkinManager.CurrentSkin;
+                Sprite skinSp = SpriteFactory.GetWardrobeSkinSprite(equipped);
+                if (skinSp != null)
+                {
+                    m_HeaderBallSkinImg.sprite = skinSp;
+                    m_HeaderBallSkinImg.color = Color.white;
+                }
+            }
         }
 
         private void BuildHomeButton()
@@ -672,14 +766,15 @@ namespace BoxBlast
             rt.anchorMin = new Vector2(0f, 1f);
             rt.anchorMax = new Vector2(0f, 1f);
             rt.pivot = new Vector2(0f, 1f);
-            rt.sizeDelta = new Vector2(130f, 62f);
+            rt.sizeDelta = new Vector2(92f, 92f);
 
-            // Translucent Royal Navy Pill with Cyan Border matching Adventure Theme
+            // Option 2 (Design B): 3D Cyan Crystal Gem Button with House Icon
             Image bg = m_HomeBtnObj.AddComponent<Image>();
-            bg.sprite = SpriteFactory.GetRoundedButtonSprite(new Color(0.06f, 0.16f, 0.36f, 0.90f), new Color(0.18f, 0.85f, 0.95f, 0.95f), 0.12f);
+            bg.sprite = SpriteFactory.GetCyanCrystalHomeButtonSprite();
             bg.raycastTarget = true;
 
             Button btn = m_HomeBtnObj.AddComponent<Button>();
+            btn.targetGraphic = bg;
             btn.onClick.AddListener(() =>
             {
                 if (SoundManager.Instance != null) SoundManager.Instance.PlayButtonClick();
@@ -689,26 +784,6 @@ namespace BoxBlast
                     OpenModeSelect();
                 }));
             });
-
-            // 3D Home House Icon
-            GameObject iconObj = new GameObject("HomeIcon");
-            iconObj.transform.SetParent(m_HomeBtnObj.transform, false);
-            RectTransform iconRt = iconObj.AddComponent<RectTransform>();
-            iconRt.anchorMin = new Vector2(0f, 0.5f);
-            iconRt.anchorMax = new Vector2(0f, 0.5f);
-            iconRt.pivot = new Vector2(0f, 0.5f);
-            iconRt.anchoredPosition = new Vector2(10f, 0f);
-            iconRt.sizeDelta = new Vector2(36f, 36f);
-            Image iconImg = iconObj.AddComponent<Image>();
-            iconImg.sprite = GemIconFactory.GetHomeSprite();
-            iconImg.color = Color.white;
-            iconImg.raycastTarget = false;
-
-            // "HOME" Text in crisp LilitaOne / Candy font
-            Font font = (m_CandyFont != null) ? m_CandyFont : m_DefaultFont;
-            GameObject txtObj = CreateText(m_HomeBtnObj.transform, new Vector2(18f, 0f), new Vector2(76f, 44f), "HOME", 24, FontStyle.Bold, Color.white, TextAnchor.MiddleCenter, font);
-            Text txt = txtObj.GetComponent<Text>();
-            MakeTextCrisp(txt, new Color(0.02f, 0.06f, 0.18f, 0.95f), 1.0f);
         }
 
         private void BuildCoinsWallet()
@@ -725,12 +800,19 @@ namespace BoxBlast
             rt.anchorMin = new Vector2(0.5f, 1f);
             rt.anchorMax = new Vector2(0.5f, 1f);
             rt.pivot = new Vector2(0.5f, 1f);
-            rt.sizeDelta = new Vector2(400, 110);
+            rt.sizeDelta = new Vector2(500f, 290f);
 
-            // Big White Current Score matching Image 1
+            // Option 2 (Design B): 3D Royal Golden Arch Plaque with Crown and Ribbon
+            Image plaqueBg = m_ScoreCardObj.AddComponent<Image>();
+            plaqueBg.sprite = SpriteFactory.GetRoyalArchHeaderPlaqueSprite();
+            plaqueBg.raycastTarget = false;
+
+            // Big Bold Juicy White Score in the celestial sapphire cavity
             int score = (GameManager.Instance != null) ? GameManager.Instance.CurrentScore : 0;
-            GameObject scoreObj = CreateText(m_ScoreCardObj.transform, Vector2.zero, new Vector2(400, 110), score.ToString("N0"), 76, FontStyle.Bold, Color.white, TextAnchor.MiddleCenter);
+            Font candyFont = (m_CandyFont != null) ? m_CandyFont : m_DefaultFont;
+            GameObject scoreObj = CreateText(m_ScoreCardObj.transform, new Vector2(0f, 18f), new Vector2(420f, 110f), score.ToString("N0"), 76, FontStyle.Bold, Color.white, TextAnchor.MiddleCenter, candyFont);
             m_ScoreText = scoreObj.GetComponent<Text>();
+            MakeTextCrisp(m_ScoreText, new Color(0.04f, 0.12f, 0.35f, 0.95f), 2.2f);
 
             // Combo Notification Popup
             GameObject comboObj = CreateText(m_RootCanvas, new Vector2(0, 280), new Vector2(600, 90), "", 46, FontStyle.Bold, new Color(1.0f, 0.85f, 0.2f), TextAnchor.MiddleCenter);
@@ -1444,17 +1526,17 @@ namespace BoxBlast
             int dailyStreak = PlayerPrefs.GetInt("BoxBlast_DailyStreak", 0);
             if (m_DailyStreakText != null)
             {
-                m_DailyStreakText.text = $"×{dailyStreak}";
+                m_DailyStreakText.text = $"{dailyStreak} DAYS";
             }
             if (m_HomeClassicBadgeText != null)
             {
-                m_HomeClassicBadgeText.text = bestScore > 0 ? $"👑 {bestScore:N0}" : "PLAY ▶";
+                m_HomeClassicBadgeText.text = bestScore > 0 ? $"BEST: {bestScore:N0}" : "PLAY";
                 m_HomeClassicBadgeText.color = bestScore > 0 ? new Color(1.0f, 0.88f, 0.25f) : Color.white;
             }
             if (m_HomeAdventureBadgeText != null)
             {
                 int currentAdvLvl = LevelManager.GetHighestUnlockedLevel(GameModeType.Adventure);
-                m_HomeAdventureBadgeText.text = $"LVL {currentAdvLvl} ▶";
+                m_HomeAdventureBadgeText.text = $"LEVEL {currentAdvLvl}";
             }
             if (m_ModeCardClassicBestText != null && GameManager.Instance != null)
             {
@@ -1473,6 +1555,15 @@ namespace BoxBlast
             {
                 m_ModeCardTaskStarsText.text = $"{GetTotalModeStars(GameModeType.Task)} / 60 Stars";
             }
+
+            if (m_AchievementsUnclaimedBadgeText != null)
+            {
+                int unclaimed = (AchievementManager.Instance != null) ? AchievementManager.Instance.GetUnclaimedCount() : 0;
+                m_AchievementsUnclaimedBadgeText.text = unclaimed.ToString();
+                m_AchievementsUnclaimedBadgeText.transform.parent.gameObject.SetActive(unclaimed > 0);
+            }
+
+            UpdateHomeEquippedBallPreview();
         }
 
         // ==========================================
@@ -1480,8 +1571,12 @@ namespace BoxBlast
         // ==========================================
         public void UpdateScore(int currentScore, int bestScore)
         {
-            if (m_ScoreText != null) m_ScoreText.text = currentScore.ToString("N0");
-            if (m_BestScoreText != null) m_BestScoreText.text = bestScore.ToString("N0");
+            if (m_ScoreText != null)
+            {
+                m_ScoreText.text = currentScore.ToString("N0");
+                StartCoroutine(PunchScale(m_ScoreText.rectTransform, 1.12f, 0.16f));
+            }
+            if (m_BestScoreText != null) m_BestScoreText.text = $"BEST: {bestScore:N0}";
             if (m_LevelScoreText != null) m_LevelScoreText.text = $"<color=#FFECA8>SCORE:</color> {currentScore:N0}";
         }
 
@@ -1511,6 +1606,7 @@ namespace BoxBlast
 
             if (m_BestScoreObj != null) m_BestScoreObj.SetActive(showGameplayHUD && !isLevel);
             if (m_SettingsBtnObj != null) m_SettingsBtnObj.SetActive(showGameplayHUD && !isLevel);
+            if (m_HeaderBallSkinBtnObj != null) m_HeaderBallSkinBtnObj.SetActive(showGameplayHUD && !isLevel);
             if (m_ScoreCardObj != null) m_ScoreCardObj.SetActive(showGameplayHUD && !isLevel);
             if (m_LevelHUD != null) m_LevelHUD.SetActive(showGameplayHUD && isLevel);
             if (m_HomeBtnObj != null) m_HomeBtnObj.SetActive(showGameplayHUD && !isLevel);
@@ -1549,16 +1645,54 @@ namespace BoxBlast
         {
             if (m_LevelMovesText != null)
             {
-                if (movesRemaining <= 3 && movesRemaining > 0)
+                if (movesRemaining <= 5 && movesRemaining > 0)
                 {
                     m_LevelMovesText.text = $"<color=#FFB0B0>MOVES:</color> <color=#FF4444>{movesRemaining}</color>";
-                    StartCoroutine(PunchScale(m_LevelMovesBoxRt != null ? m_LevelMovesBoxRt : m_LevelMovesText.rectTransform, 1.15f, 0.18f));
                 }
                 else
                 {
                     m_LevelMovesText.text = $"<color=#9FE8FF>MOVES:</color> <color=#FFDE38>{movesRemaining}</color>";
                 }
             }
+        }
+
+        public void TriggerLowMovesWarning(int movesLeft)
+        {
+            if (m_LevelMovesBoxRt == null || m_LevelMovesText == null) return;
+            if (m_LowMovesCoroutine != null) StopCoroutine(m_LowMovesCoroutine);
+            m_LowMovesCoroutine = StartCoroutine(AnimateLowMovesHeartbeat(movesLeft));
+        }
+
+        private System.Collections.IEnumerator AnimateLowMovesHeartbeat(int movesLeft)
+        {
+            if (m_LevelMovesBoxRt == null) yield break;
+
+            if (SoundManager.Instance != null) SoundManager.Instance.PlayTensionTick();
+            HapticManager.TriggerHeavy();
+
+            if (movesLeft == 5)
+            {
+                FloatingText.CreateBadge(Vector3.up * 1.5f, "⚠️ ONLY 5 MOVES REMAINING!", new Color(1f, 0.95f, 0.4f), new Color(0.85f, 0.2f, 0.2f));
+            }
+
+            float[] scales = new float[] { 1.25f, 1.05f, 1.20f, 1.0f };
+            float[] times = new float[] { 0.10f, 0.08f, 0.10f, 0.12f };
+
+            Vector3 origScale = Vector3.one;
+            for (int step = 0; step < scales.Length; step++)
+            {
+                Vector3 start = m_LevelMovesBoxRt.localScale;
+                Vector3 target = origScale * scales[step];
+                float dur = times[step];
+                float elapsed = 0f;
+                while (elapsed < dur)
+                {
+                    elapsed += Time.unscaledDeltaTime;
+                    m_LevelMovesBoxRt.localScale = Vector3.Lerp(start, target, elapsed / dur);
+                    yield return null;
+                }
+            }
+            m_LevelMovesBoxRt.localScale = origScale;
         }
 
         public void UpdateGoalProgress(string goalProgressText)
@@ -1738,28 +1872,51 @@ namespace BoxBlast
 
             if (m_GameOverReviveBtn != null)
             {
-                m_GameOverReviveBtn.SetActive(canRevive);
-                if (canRevive && m_GameOverReviveText != null)
+                Button btn = m_GameOverReviveBtn.GetComponent<Button>();
+                if (btn != null) btn.interactable = canRevive;
+                if (m_GameOverReviveText != null)
                 {
-                    m_GameOverReviveText.text = remaining == 1 ? "REVIVE (1 CHANCE LEFT)" : $"REVIVE ({remaining} CHANCES LEFT)";
+                    m_GameOverReviveText.text = canRevive
+                        ? (remaining == 1 ? "REVIVE (1 CHANCE LEFT)" : $"REVIVE ({remaining} CHANCES LEFT)")
+                        : "NO REVIVES LEFT";
+                    m_GameOverReviveText.color = canRevive ? Color.white : new Color(1f, 1f, 1f, 0.55f);
                 }
-            }
-
-            if (m_GameOverRestartBtn != null)
-            {
-                RectTransform rt = m_GameOverRestartBtn.GetComponent<RectTransform>();
-                rt.anchoredPosition = canRevive ? new Vector2(0, -128) : new Vector2(0, -70);
-            }
-            if (m_GameOverHomeBtn != null)
-            {
-                RectTransform rt = m_GameOverHomeBtn.GetComponent<RectTransform>();
-                rt.anchoredPosition = canRevive ? new Vector2(0, -206) : new Vector2(0, -150);
             }
 
             if (m_GameOverPanel != null)
             {
+                RectTransform pRt = m_GameOverPanel.GetComponent<RectTransform>();
+                if (pRt != null)
+                {
+                    pRt.anchorMin = Vector2.zero;
+                    pRt.anchorMax = Vector2.one;
+                    pRt.offsetMin = Vector2.zero;
+                    pRt.offsetMax = Vector2.zero;
+                    pRt.sizeDelta = Vector2.zero;
+                }
+
                 m_GameOverPanel.SetActive(true);
                 m_GameOverPanel.transform.SetAsLastSibling();
+
+                Transform scene = m_GameOverPanel.transform.Find("GameOverSceneCard");
+                if (scene != null)
+                {
+                    float canvasHeight = 1920f;
+                    float canvasWidth = 1080f;
+                    if (m_RootCanvas != null)
+                    {
+                        RectTransform cRt = m_RootCanvas.GetComponent<RectTransform>();
+                        if (cRt != null && cRt.rect.height > 0) canvasHeight = cRt.rect.height;
+                        if (cRt != null && cRt.rect.width > 0) canvasWidth = cRt.rect.width;
+                    }
+                    float scaleByH = canvasHeight / 1376f;
+                    float scaleByW = (canvasWidth * 1.08f) / 768f;
+                    float fitScale = Mathf.Min(scaleByH, scaleByW);
+                    scene.localScale = new Vector3(fitScale, fitScale, 1f);
+
+                    StopCoroutine("AnimateModalOpen");
+                    StartCoroutine(AnimateModalOpen(scene.GetComponent<RectTransform>(), fitScale));
+                }
             }
         }
 
@@ -1893,7 +2050,7 @@ namespace BoxBlast
                     }
                 }
 
-                // Dynamic responsive card scale for 9:16 aspect ratio across all mobile displays
+                // Dynamic responsive card scale for 9:16 aspect ratio across all mobile displays (matching Settings modal)
                 Transform scene = m_DefeatModal.transform.Find("DefeatSceneCard");
                 if (scene != null)
                 {
@@ -1908,8 +2065,13 @@ namespace BoxBlast
                             canvasWidth = cRt.rect.width;
                         }
                     }
-                    float scale = Mathf.Min(canvasWidth / 768f, canvasHeight / 1376f, 1.0f);
-                    scene.localScale = Vector3.one * scale;
+                    float scaleByH = canvasHeight / 1376f;
+                    float scaleByW = (canvasWidth * 1.08f) / 768f;
+                    float fitScale = Mathf.Min(scaleByH, scaleByW);
+                    scene.localScale = new Vector3(fitScale, fitScale, 1f);
+
+                    StopCoroutine("AnimateModalOpen");
+                    StartCoroutine(AnimateModalOpen(scene.GetComponent<RectTransform>(), fitScale));
                 }
 
                 m_DefeatModal.SetActive(true);
@@ -1989,14 +2151,14 @@ namespace BoxBlast
 
             Font hudFont = (m_CandyFont != null) ? m_CandyFont : ((m_HudCleanFont != null) ? m_HudCleanFont : m_DefaultFont);
 
-            // 1. Left Plaque: Level Indicator - Centered over 3D sapphire plaque at X = -331, Y = -425
+            // 1. Left Plaque: Level Indicator - Centered over 3D sapphire plaque at X = -331, Y = -406
             GameObject levelBoxObj = new GameObject("HeaderLevelBox");
             levelBoxObj.transform.SetParent(m_LevelHUD.transform, false);
             RectTransform lbRt = levelBoxObj.AddComponent<RectTransform>();
             lbRt.anchorMin = new Vector2(0.5f, 1f);
             lbRt.anchorMax = new Vector2(0.5f, 1f);
             lbRt.pivot = new Vector2(0.5f, 0.5f);
-            lbRt.anchoredPosition = new Vector2(-331f, -425f);
+            lbRt.anchoredPosition = new Vector2(-331f, -406f);
             lbRt.sizeDelta = new Vector2(250f, 75f);
 
             GameObject titleObj = CreateText(levelBoxObj.transform, Vector2.zero, new Vector2(240f, 55f), "LEVEL 1", 32, FontStyle.Normal, new Color(1f, 0.96f, 0.88f), TextAnchor.MiddleCenter, hudFont);
@@ -2006,14 +2168,14 @@ namespace BoxBlast
             m_LevelTitleText.resizeTextMaxSize = 32;
             MakeTextCrisp(m_LevelTitleText, new Color(0.02f, 0.05f, 0.16f, 0.95f), 1.0f);
 
-            // 2. Center Hero Plaque: Moves Counter - Centered over winged crest plaque at X = 0, Y = -425
+            // 2. Center Hero Plaque: Moves Counter - Centered over winged crest plaque at X = 0, Y = -406
             GameObject movesBoxObj = new GameObject("HeaderMovesBox");
             movesBoxObj.transform.SetParent(m_LevelHUD.transform, false);
             m_LevelMovesBoxRt = movesBoxObj.AddComponent<RectTransform>();
             m_LevelMovesBoxRt.anchorMin = new Vector2(0.5f, 1f);
             m_LevelMovesBoxRt.anchorMax = new Vector2(0.5f, 1f);
             m_LevelMovesBoxRt.pivot = new Vector2(0.5f, 0.5f);
-            m_LevelMovesBoxRt.anchoredPosition = new Vector2(0f, -425f);
+            m_LevelMovesBoxRt.anchoredPosition = new Vector2(0f, -406f);
             m_LevelMovesBoxRt.sizeDelta = new Vector2(260f, 75f);
 
             GameObject movesObj = CreateText(movesBoxObj.transform, Vector2.zero, new Vector2(250f, 55f), "<color=#9FE8FF>MOVES:</color> <color=#FFDE38>40</color>", 34, FontStyle.Normal, Color.white, TextAnchor.MiddleCenter, hudFont);
@@ -2023,14 +2185,14 @@ namespace BoxBlast
             m_LevelMovesText.resizeTextMaxSize = 34;
             MakeTextCrisp(m_LevelMovesText, new Color(0.01f, 0.04f, 0.18f, 0.95f), 1.0f);
 
-            // 3. Right Plaque: Score with Star Icon - Centered over 3D gold plaque at X = 328, Y = -425
+            // 3. Right Plaque: Score with Star Icon - Centered over 3D gold plaque at X = 328, Y = -406
             GameObject scoreBoxObj = new GameObject("HeaderScoreBox");
             scoreBoxObj.transform.SetParent(m_LevelHUD.transform, false);
             RectTransform sbRt = scoreBoxObj.AddComponent<RectTransform>();
             sbRt.anchorMin = new Vector2(0.5f, 1f);
             sbRt.anchorMax = new Vector2(0.5f, 1f);
             sbRt.pivot = new Vector2(0.5f, 0.5f);
-            sbRt.anchoredPosition = new Vector2(328f, -425f);
+            sbRt.anchoredPosition = new Vector2(328f, -406f);
             sbRt.sizeDelta = new Vector2(250f, 75f);
 
             int score = (GameManager.Instance != null) ? GameManager.Instance.CurrentScore : 0;
@@ -2062,8 +2224,8 @@ namespace BoxBlast
             gobRt.anchorMin = new Vector2(0.5f, 1f);
             gobRt.anchorMax = new Vector2(0.5f, 1f);
             gobRt.pivot = new Vector2(0.5f, 0.5f);
-            gobRt.anchoredPosition = new Vector2(0f, -550f);
-            gobRt.sizeDelta = new Vector2(760f, 76f);
+            gobRt.anchoredPosition = new Vector2(0f, -535f);
+            gobRt.sizeDelta = new Vector2(880f, 118f);
             Image gobBg = m_GemObjectivesBar.AddComponent<Image>();
             Sprite objCapsule = Resources.Load<Sprite>("Gameplay_Objectives_Concept1");
             gobBg.sprite = (objCapsule != null) ? objCapsule : SpriteFactory.GetPillBadgeSprite(new Color(0.04f, 0.08f, 0.18f, 0.70f));
@@ -2078,22 +2240,22 @@ namespace BoxBlast
             gRt.anchorMax = new Vector2(0.5f, 0.5f);
             gRt.pivot = new Vector2(0.5f, 0.5f);
             gRt.anchoredPosition = Vector2.zero;
-            gRt.sizeDelta = new Vector2(460f, 65f);
+            gRt.sizeDelta = new Vector2(560f, 90f);
             Image gBg = goalBadge.AddComponent<Image>();
             gBg.color = new Color(1f, 1f, 1f, 0.001f);
             gBg.raycastTarget = false;
 
-            GameObject goalObj = CreateText(goalBadge.transform, Vector2.zero, new Vector2(440f, 55f), "Lines: 0/3", 26, FontStyle.Normal, new Color(0.40f, 0.98f, 0.70f), TextAnchor.MiddleCenter, hudFont);
+            GameObject goalObj = CreateText(goalBadge.transform, Vector2.zero, new Vector2(540f, 75f), "Lines: 0/3", 34, FontStyle.Normal, new Color(0.40f, 0.98f, 0.70f), TextAnchor.MiddleCenter, hudFont);
             m_LevelGoalText = goalObj.GetComponent<Text>();
             m_LevelGoalText.resizeTextForBestFit = true;
-            m_LevelGoalText.resizeTextMinSize = 16;
-            m_LevelGoalText.resizeTextMaxSize = 26;
+            m_LevelGoalText.resizeTextMinSize = 22;
+            m_LevelGoalText.resizeTextMaxSize = 34;
             m_LevelGoalBadgeObj = goalBadge;
 
             // 4 Dynamic Gem Slots inside the Capsule Bar
             m_GemObjectiveItems.Clear();
             GemType[] hudGems = new GemType[] { GemType.BlueDiamond, GemType.OrangePentagon, GemType.YellowStar, GemType.RedRuby };
-            float[] offsets = new float[] { -225f, -75f, 75f, 225f };
+            float[] offsets = new float[] { -270f, -90f, 90f, 270f };
 
             for (int i = 0; i < hudGems.Length; i++)
             {
@@ -2105,7 +2267,7 @@ namespace BoxBlast
                 itemRt.anchorMax = new Vector2(0.5f, 0.5f);
                 itemRt.pivot = new Vector2(0.5f, 0.5f);
                 itemRt.anchoredPosition = new Vector2(offsets[i], 0f);
-                itemRt.sizeDelta = new Vector2(140f, 65f);
+                itemRt.sizeDelta = new Vector2(170f, 95f);
 
                 // 3D Gem Icon
                 GameObject iconObj = new GameObject("Icon");
@@ -2114,18 +2276,18 @@ namespace BoxBlast
                 iconRt.anchorMin = new Vector2(0.5f, 0.5f);
                 iconRt.anchorMax = new Vector2(0.5f, 0.5f);
                 iconRt.pivot = new Vector2(0.5f, 0.5f);
-                iconRt.anchoredPosition = new Vector2(-30f, 0f);
-                iconRt.sizeDelta = new Vector2(52f, 52f);
+                iconRt.anchoredPosition = new Vector2(-36f, 0f);
+                iconRt.sizeDelta = new Vector2(66f, 66f);
                 Image iconImg = iconObj.AddComponent<Image>();
                 iconImg.sprite = GemIconFactory.GetGemSprite(gType);
                 iconImg.raycastTarget = false;
 
                 // Crisp count text matching Concept 1 ("x15", "x10", etc.)
-                GameObject countObj = CreateText(itemObj.transform, new Vector2(26f, 0f), new Vector2(76f, 46f), "x0", 36, FontStyle.Normal, Color.white, TextAnchor.MiddleLeft, hudFont);
+                GameObject countObj = CreateText(itemObj.transform, new Vector2(34f, 0f), new Vector2(90f, 60f), "x0", 42, FontStyle.Normal, Color.white, TextAnchor.MiddleLeft, hudFont);
                 Text countTxt = countObj.GetComponent<Text>();
                 countTxt.resizeTextForBestFit = true;
-                countTxt.resizeTextMinSize = 24;
-                countTxt.resizeTextMaxSize = 36;
+                countTxt.resizeTextMinSize = 28;
+                countTxt.resizeTextMaxSize = 42;
                 MakeTextCrisp(countTxt, new Color(0.01f, 0.05f, 0.18f, 0.95f), 1.0f);
 
                 m_GemObjectiveItems[gType] = (itemObj, iconImg, countTxt, iconRt);
@@ -2142,219 +2304,99 @@ namespace BoxBlast
             RectTransform rt = m_ModeSelectPanel.AddComponent<RectTransform>();
             rt.anchorMin = Vector2.zero; rt.anchorMax = Vector2.one; rt.sizeDelta = Vector2.zero;
 
-            // Fullscreen Cosmic Studio Vignette Backdrop (Concept 3)
-            Image bg = m_ModeSelectPanel.AddComponent<Image>();
+            // Deep cosmic space navy backdrop matching the outer space void (#080b26)
+            Image panelBg = m_ModeSelectPanel.AddComponent<Image>();
+            panelBg.color = new Color(0.035f, 0.05f, 0.16f, 1f);
+            panelBg.raycastTarget = true;
+
+            // Centered Content Card strictly locked to 1152 x 2048 (0.5625 aspect ratio)
+            // This mathematically guarantees all 8 element spheres, the central star halo,
+            // and the golden cosmic ring remain 100% PERFECT CIRCLES on any screen!
+            GameObject cardObj = new GameObject("HomeContentCard");
+            cardObj.transform.SetParent(m_ModeSelectPanel.transform, false);
+            RectTransform cardRt = cardObj.AddComponent<RectTransform>();
+            cardRt.anchorMin = Vector2.zero;
+            cardRt.anchorMax = Vector2.one;
+            cardRt.sizeDelta = Vector2.zero;
+
+            AspectRatioFitter arf = cardObj.AddComponent<AspectRatioFitter>();
+            arf.aspectMode = AspectRatioFitter.AspectMode.FitInParent;
+            arf.aspectRatio = 1152f / 2048f; // 0.5625f exact aspect ratio
+
+            // Concept 3 Master 3D Artwork (Ball Blast crown, 8 element spheres, rainbow star, 3D Adventure button)
+            Image bg = cardObj.AddComponent<Image>();
             bg.sprite = SpriteFactory.GetHomeBackgroundConcept3Sprite();
             bg.color = Color.white;
-            bg.raycastTarget = true;
+            bg.preserveAspect = true;
+            bg.raycastTarget = false;
 
-            // Background Volumetric Starburst Light Needles (radiating from center cluster)
-            GameObject bgRaysObj = new GameObject("Background_StarburstRays");
-            bgRaysObj.transform.SetParent(m_ModeSelectPanel.transform, false);
-            RectTransform bgrRt = bgRaysObj.AddComponent<RectTransform>();
-            bgrRt.anchorMin = new Vector2(0.5f, 0.5f);
-            bgrRt.anchorMax = new Vector2(0.5f, 0.5f);
-            bgrRt.anchoredPosition = new Vector2(0f, 20f);
-            bgrRt.sizeDelta = new Vector2(1300f, 1300f);
-            Image bgrImg = bgRaysObj.AddComponent<Image>();
-            bgrImg.sprite = SpriteFactory.GetStarburstRaysSprite();
-            bgrImg.color = new Color(1f, 1f, 1f, 0.18f); // Subtle shimmer over background rays
-            bgrImg.raycastTarget = false;
-
-            // Safe Area calculations for Android mobile notches, punch holes, and curved edges
-            float safeTop = 0f;
-            float safeBottom = 0f;
-            float safeLeft = 0f;
-            float safeRight = 0f;
-            float refHeight = 1920f;
-            float refWidth = 1080f;
-            if (Screen.height > 0 && Screen.width > 0)
-            {
-                Rect safeArea = Screen.safeArea;
-                float topPixels = Screen.height - (safeArea.y + safeArea.height);
-                float bottomPixels = safeArea.y;
-                float leftPixels = safeArea.x;
-                float rightPixels = Screen.width - (safeArea.x + safeArea.width);
-
-                float scale = refWidth / Screen.width;
-                refHeight = Screen.height * scale;
-
-                safeTop = topPixels * scale;
-                safeBottom = bottomPixels * scale;
-                safeLeft = leftPixels * scale;
-                safeRight = rightPixels * scale;
-            }
-            float padTop = Mathf.Max(safeTop + 30f, 80f);
-            float padBottom = Mathf.Max(safeBottom + 40f, 90f);
-            float padLeft = Mathf.Max(safeLeft + 35f, 55f);
-            float padRight = Mathf.Max(safeRight + 35f, 55f);
-
-            // Top-Left: Settings Gear Button (Circular tactile button)
-            m_HomeSettingsBtn = CreateCircularIconButton(m_ModeSelectPanel.transform, new Vector2(padLeft, -padTop), 72, GemIconFactory.GetGearSprite(), new Color(0.10f, 0.28f, 0.70f, 0.85f));
-            RectTransform stRt = m_HomeSettingsBtn.GetComponent<RectTransform>();
-            stRt.anchorMin = new Vector2(0f, 1f); stRt.anchorMax = new Vector2(0f, 1f); stRt.pivot = new Vector2(0f, 1f);
-            m_HomeSettingsBtn.GetComponent<Button>().onClick.AddListener(OpenSettings);
-
-            // Top-Right: "Medal" Icon Button (matching reference image: Medal icon with "Medal" text underneath)
-            GameObject medalBtnObj = new GameObject("Button_Medal");
-            medalBtnObj.transform.SetParent(m_ModeSelectPanel.transform, false);
-            RectTransform medRt = medalBtnObj.AddComponent<RectTransform>();
-            medRt.anchorMin = new Vector2(1f, 1f); medRt.anchorMax = new Vector2(1f, 1f); medRt.pivot = new Vector2(1f, 1f);
-            medRt.anchoredPosition = new Vector2(-padRight, -padTop);
-            medRt.sizeDelta = new Vector2(80, 90);
-
-            Image medImg = medalBtnObj.AddComponent<Image>();
-            medImg.color = Color.clear;
-            medImg.raycastTarget = true;
-
-            GameObject medalIconObj = new GameObject("MedalIcon");
-            medalIconObj.transform.SetParent(medalBtnObj.transform, false);
-            RectTransform miRt = medalIconObj.AddComponent<RectTransform>();
-            miRt.anchoredPosition = new Vector2(0, 14);
-            miRt.sizeDelta = new Vector2(60, 60);
-            Image miImg = medalIconObj.AddComponent<Image>();
-            miImg.sprite = GemIconFactory.GetMedalSprite();
-            miImg.raycastTarget = false;
-
-            GameObject medTxtObj = CreateText(medalBtnObj.transform, new Vector2(0, -28), new Vector2(80, 24), "Medal", 19, FontStyle.Bold, Color.white, TextAnchor.MiddleCenter, m_CandyFont);
-            Shadow medTxtSh = medTxtObj.AddComponent<Shadow>();
-            medTxtSh.effectColor = new Color(0.04f, 0.15f, 0.45f, 0.90f);
-            medTxtSh.effectDistance = new Vector2(1, -1);
-
-            Button medBtn = medalBtnObj.AddComponent<Button>();
-            medBtn.onClick.AddListener(() =>
-            {
-                if (SoundManager.Instance != null) SoundManager.Instance.PlayButtonClick();
-                HapticManager.TriggerLight();
-                StartCoroutine(AnimateButtonPress(medRt, OpenSkinWardrobe));
-            });
-            m_HomeWardrobeBtn = medalBtnObj;
-
-            // Concept 3: Floating Bokeh (Built directly into high-res background plate)
-            var bokehItems = new List<BokehDriftData>();
-
-            // Center Content Holder (scaled dynamically for 1080p Android phones across 16:9, 18:9, 19.5:9, 20:9)
-            GameObject centerObj = new GameObject("HomeCenterContent");
-            centerObj.transform.SetParent(m_ModeSelectPanel.transform, false);
-            RectTransform cRt = centerObj.AddComponent<RectTransform>();
-            cRt.anchorMin = new Vector2(0.5f, 0.5f);
-            cRt.anchorMax = new Vector2(0.5f, 0.5f);
-            cRt.anchoredPosition = Vector2.zero;
-            cRt.sizeDelta = new Vector2(900, refHeight);
-
-            // Responsive vertical layout coordinates matching Concept 3 artwork:
-            float titleOffsetY = Mathf.Clamp((refHeight - 1920f) * 0.18f, 0f, 85f);
-            float titleCenterY = 460f + titleOffsetY;
-
-            float clBtnY = -(refHeight * 0.28f);
-            float minAllowedClY = -(refHeight / 2f) + padBottom + 64f + 25f;
-            if (clBtnY < minAllowedClY) clBtnY = minAllowedClY;
-            float advBtnY = clBtnY + 160f;
-            float clusterY = 20f;
-
-            // 0. Ambient Celestial Logo Glow Halo (Soft radial glow centered behind title)
-            GameObject titleGlowObj = new GameObject("TitleBackdropGlow");
-            titleGlowObj.transform.SetParent(centerObj.transform, false);
-            RectTransform tgRt = titleGlowObj.AddComponent<RectTransform>();
-            tgRt.anchoredPosition = new Vector2(0, titleCenterY);
-            tgRt.sizeDelta = new Vector2(720, 420);
-            Image tgImg = titleGlowObj.AddComponent<Image>();
-            tgImg.sprite = SpriteFactory.GetSoftGlowOrbSprite();
-            tgImg.color = new Color(0.20f, 0.52f, 1.0f, 0.28f);
-            tgImg.raycastTarget = false;
-
-            // 1. Center 3D Spheres Orbital Cluster with Dynamic Visuals & Juicy Animations!
-            // Placed symmetrically in the center over the glowing starburst core
-            GameObject spheresClusterObj = new GameObject("CenterSpheresCluster");
-            spheresClusterObj.transform.SetParent(centerObj.transform, false);
-            RectTransform clusterRt = spheresClusterObj.AddComponent<RectTransform>();
-            clusterRt.anchoredPosition = new Vector2(0, clusterY);
-            clusterRt.sizeDelta = new Vector2(420, 420);
-
-            HomeSpheresAnimator sphereAnim = spheresClusterObj.AddComponent<HomeSpheresAnimator>();
-            sphereAnim.SetBaseCenterY(clusterY);
-            sphereAnim.Initialize();
-
-            // 2. Master 3D Candy Balloon Title Logo ("SPHERE BLAST" + Chubby Golden Crown)
-            GameObject logoObj = new GameObject("Title_SphereBlast_MasterLogo");
-            logoObj.transform.SetParent(centerObj.transform, false);
-            RectTransform logoRt = logoObj.AddComponent<RectTransform>();
-            logoRt.anchoredPosition = new Vector2(0, titleCenterY);
-            logoRt.sizeDelta = new Vector2(640, 440);
-
-            Image logoImg = logoObj.AddComponent<Image>();
-            logoImg.sprite = SpriteFactory.GetSphereBlastTitleLogoSprite();
-            logoImg.preserveAspect = true;
-            logoImg.raycastTarget = false;
-
-            // Interactive Golden Crown tap reaction area
-            GameObject crownTapObj = new GameObject("Crown_InteractiveZone");
-            crownTapObj.transform.SetParent(logoObj.transform, false);
-            RectTransform crRt = crownTapObj.AddComponent<RectTransform>();
-            crRt.anchoredPosition = new Vector2(0f, 130f);
-            crRt.sizeDelta = new Vector2(180, 140);
-            Button crBtn = crownTapObj.AddComponent<Button>();
-            crBtn.transition = Selectable.Transition.None;
-            crBtn.onClick.AddListener(() =>
-            {
-                if (SoundManager.Instance != null) SoundManager.Instance.PlayButtonClick();
-                HapticManager.TriggerLight();
-                StartCoroutine(AnimateButtonPress(logoRt, null));
-            });
-
-            // Diamond Twinkle Star on crown peak
-            GameObject crownStarGlint = new GameObject("CrownStarGlint");
-            crownStarGlint.transform.SetParent(crownTapObj.transform, false);
-            RectTransform csgRt = crownStarGlint.AddComponent<RectTransform>();
-            csgRt.anchoredPosition = new Vector2(0f, 32f);
-            csgRt.sizeDelta = new Vector2(34, 34);
-            Image csgImg = crownStarGlint.AddComponent<Image>();
-            csgImg.sprite = GemIconFactory.GetStarSprite(true);
-            csgImg.color = new Color(1f, 1f, 1f, 0.95f);
-            csgImg.raycastTarget = false;
-
-            // 5a. Adventure Button (Concept 3 Pixar-Grade 3D Pill Button with baked 3D text & map pin badge)
+            // 1. Interactive Button: ADVENTURE (Directly over the painted 3D Golden Adventure button)
             GameObject advBtnObj = new GameObject("Button_Adventure");
-            advBtnObj.transform.SetParent(centerObj.transform, false);
+            advBtnObj.transform.SetParent(cardObj.transform, false);
             RectTransform advRt = advBtnObj.AddComponent<RectTransform>();
-            advRt.anchoredPosition = new Vector2(0, advBtnY);
-            advRt.sizeDelta = new Vector2(530, 148);
+            advRt.anchorMin = new Vector2(0.145f, 0.130f);
+            advRt.anchorMax = new Vector2(0.855f, 0.235f);
+            advRt.offsetMin = Vector2.zero;
+            advRt.offsetMax = Vector2.zero;
 
             Image advImg = advBtnObj.AddComponent<Image>();
-            advImg.sprite = SpriteFactory.GetAdventure3DButtonSprite();
-            advImg.preserveAspect = true;
+            advImg.color = Color.clear;
             advImg.raycastTarget = true;
 
+            // Subtle golden glow flash on tap
+            GameObject advGlowObj = new GameObject("AdventureGlowHighlight");
+            advGlowObj.transform.SetParent(advBtnObj.transform, false);
+            RectTransform agRt = advGlowObj.AddComponent<RectTransform>();
+            agRt.anchorMin = Vector2.zero; agRt.anchorMax = Vector2.one; agRt.sizeDelta = Vector2.zero;
+            Image agImg = advGlowObj.AddComponent<Image>();
+            agImg.sprite = SpriteFactory.GetPillSprite(Color.white);
+            agImg.color = new Color(1.0f, 0.88f, 0.30f, 0f);
+            agImg.raycastTarget = false;
+
             Button advBtn = advBtnObj.AddComponent<Button>();
+            advBtn.transition = Selectable.Transition.None;
             advBtn.onClick.AddListener(() =>
             {
                 if (SoundManager.Instance != null) SoundManager.Instance.PlayButtonClick();
                 HapticManager.TriggerLight();
-                StartCoroutine(AnimateButtonPress(advRt, () =>
+                StartCoroutine(AnimateButtonFlash(agImg, () =>
                 {
                     m_ModeSelectPanel.SetActive(false);
                     OpenLevelSelect(GameModeType.Adventure);
                 }));
             });
 
-            // 6a. Classic Button (Concept 3 Pixar-Grade 3D Pill Button with baked 3D text & rainbow infinity jewel)
+            // 2. Interactive Button: CLASSIC MODE (Placed neatly below Adventure in bottom space)
             GameObject classicBtnObj = new GameObject("Button_Classic");
-            classicBtnObj.transform.SetParent(centerObj.transform, false);
+            classicBtnObj.transform.SetParent(cardObj.transform, false);
             RectTransform clRt = classicBtnObj.AddComponent<RectTransform>();
-            clRt.anchoredPosition = new Vector2(0, clBtnY);
-            clRt.sizeDelta = new Vector2(530, 134);
+            clRt.anchorMin = new Vector2(0.25f, 0.024f);
+            clRt.anchorMax = new Vector2(0.75f, 0.096f);
+            clRt.offsetMin = Vector2.zero;
+            clRt.offsetMax = Vector2.zero;
 
             Image clImg = classicBtnObj.AddComponent<Image>();
             clImg.sprite = SpriteFactory.GetClassic3DButtonSprite();
             clImg.preserveAspect = true;
             clImg.raycastTarget = true;
 
+            // Cyan Glow Highlight on tap
+            GameObject clGlowObj = new GameObject("ClassicGlowHighlight");
+            clGlowObj.transform.SetParent(classicBtnObj.transform, false);
+            RectTransform cgRt = clGlowObj.AddComponent<RectTransform>();
+            cgRt.anchorMin = Vector2.zero; cgRt.anchorMax = Vector2.one; cgRt.sizeDelta = Vector2.zero;
+            Image cgImg = clGlowObj.AddComponent<Image>();
+            cgImg.sprite = SpriteFactory.GetPillSprite(Color.white);
+            cgImg.color = new Color(0.20f, 0.90f, 1.0f, 0f);
+            cgImg.raycastTarget = false;
+
             Button clBtn = classicBtnObj.AddComponent<Button>();
+            clBtn.transition = Selectable.Transition.None;
             clBtn.onClick.AddListener(() =>
             {
                 if (SoundManager.Instance != null) SoundManager.Instance.PlayButtonClick();
                 HapticManager.TriggerLight();
-                StartCoroutine(AnimateButtonPress(clRt, () =>
+                StartCoroutine(AnimateButtonFlash(cgImg, () =>
                 {
                     m_ModeSelectPanel.SetActive(false);
                     if (GameManager.Instance != null)
@@ -2365,14 +2407,114 @@ namespace BoxBlast
                 }));
             });
 
-            // 7. Living Animations: Add HomeButtonBreather for gentle idle pulse, crown twinkle & drifting rays
-            HomeButtonBreather breather = centerObj.AddComponent<HomeButtonBreather>();
-            breather.classicBtnRt = clRt;
-            breather.adventureBtnRt = advRt;
-            breather.logoRt = logoRt;
+            // 3. Top-Right: Settings Gear Hitbox (Directly over top-right golden gear socket)
+            GameObject settingsBtnObj = new GameObject("Button_Settings");
+            settingsBtnObj.transform.SetParent(cardObj.transform, false);
+            RectTransform stRt = settingsBtnObj.AddComponent<RectTransform>();
+            stRt.anchorMin = new Vector2(0.825f, 0.865f);
+            stRt.anchorMax = new Vector2(0.985f, 0.955f);
+            stRt.offsetMin = Vector2.zero;
+            stRt.offsetMax = Vector2.zero;
+
+            Image stImg = settingsBtnObj.AddComponent<Image>();
+            stImg.color = Color.clear;
+            stImg.raycastTarget = true;
+
+            GameObject stGlowObj = new GameObject("SettingsGlowHighlight");
+            stGlowObj.transform.SetParent(settingsBtnObj.transform, false);
+            RectTransform sgRt = stGlowObj.AddComponent<RectTransform>();
+            sgRt.anchorMin = Vector2.zero; sgRt.anchorMax = Vector2.one; sgRt.sizeDelta = Vector2.zero;
+            Image sgImg = stGlowObj.AddComponent<Image>();
+            sgImg.sprite = SpriteFactory.GetSoftGlowOrbSprite();
+            sgImg.color = new Color(1f, 1f, 1f, 0f);
+            sgImg.raycastTarget = false;
+
+            Button stBtn = settingsBtnObj.AddComponent<Button>();
+            stBtn.transition = Selectable.Transition.None;
+            stBtn.onClick.AddListener(() =>
+            {
+                if (SoundManager.Instance != null) SoundManager.Instance.PlayButtonClick();
+                HapticManager.TriggerLight();
+                StartCoroutine(AnimateButtonFlash(sgImg, OpenSettings));
+            });
+            m_HomeSettingsBtn = settingsBtnObj;
+
+            // 4. Top-Left: Wardrobe Crystal Socket (Directly over top-left blue crystal orb)
+            GameObject wardrobeBtnObj = new GameObject("Button_Wardrobe");
+            wardrobeBtnObj.transform.SetParent(cardObj.transform, false);
+            RectTransform wdRt = wardrobeBtnObj.AddComponent<RectTransform>();
+            wdRt.anchorMin = new Vector2(0.015f, 0.865f);
+            wdRt.anchorMax = new Vector2(0.175f, 0.955f);
+            wdRt.offsetMin = Vector2.zero;
+            wdRt.offsetMax = Vector2.zero;
+            m_HomeBallDesignsPillRt = wdRt;
+
+            Image wdImg = wardrobeBtnObj.AddComponent<Image>();
+            wdImg.color = Color.clear;
+            wdImg.raycastTarget = true;
+
+            GameObject wdGlowObj = new GameObject("WardrobeGlowHighlight");
+            wdGlowObj.transform.SetParent(wardrobeBtnObj.transform, false);
+            RectTransform wgRt = wdGlowObj.AddComponent<RectTransform>();
+            wgRt.anchorMin = Vector2.zero; wgRt.anchorMax = Vector2.one; wgRt.sizeDelta = Vector2.zero;
+            Image wgImg = wdGlowObj.AddComponent<Image>();
+            wgImg.sprite = SpriteFactory.GetSoftGlowOrbSprite();
+            wgImg.color = new Color(0.40f, 0.80f, 1f, 0f);
+            wgImg.raycastTarget = false;
+
+            Button wdBtn = wardrobeBtnObj.AddComponent<Button>();
+            wdBtn.transition = Selectable.Transition.None;
+            wdBtn.onClick.AddListener(() =>
+            {
+                if (SoundManager.Instance != null) SoundManager.Instance.PlayButtonClick();
+                HapticManager.TriggerLight();
+                StartCoroutine(AnimateButtonFlash(wgImg, OpenSkinWardrobe));
+            });
+            m_HomeWardrobeBtn = wardrobeBtnObj;
+
+            // 5. Crown Peak Diamond Twinkle Star (Living rotating sparkle on crown peak)
+            GameObject crownStarGlint = new GameObject("CrownStarGlint");
+            crownStarGlint.transform.SetParent(cardObj.transform, false);
+            RectTransform csgRt = crownStarGlint.AddComponent<RectTransform>();
+            csgRt.anchorMin = new Vector2(0.50f, 0.955f);
+            csgRt.anchorMax = new Vector2(0.50f, 0.955f);
+            csgRt.anchoredPosition = Vector2.zero;
+            csgRt.sizeDelta = new Vector2(36, 36);
+            Image csgImg = crownStarGlint.AddComponent<Image>();
+            csgImg.sprite = GemIconFactory.GetStarSprite(true);
+            csgImg.color = new Color(1f, 1f, 1f, 0.95f);
+            csgImg.raycastTarget = false;
+
+            // Interactive Golden Crown Tap Easter Egg
+            GameObject crownTapObj = new GameObject("Crown_InteractiveZone");
+            crownTapObj.transform.SetParent(cardObj.transform, false);
+            RectTransform crRt = crownTapObj.AddComponent<RectTransform>();
+            crRt.anchorMin = new Vector2(0.35f, 0.885f);
+            crRt.anchorMax = new Vector2(0.65f, 0.965f);
+            crRt.offsetMin = Vector2.zero;
+            crRt.offsetMax = Vector2.zero;
+            Image crImg = crownTapObj.AddComponent<Image>();
+            crImg.color = Color.clear;
+            crImg.raycastTarget = true;
+            Button crBtn = crownTapObj.AddComponent<Button>();
+            crBtn.transition = Selectable.Transition.None;
+            crBtn.onClick.AddListener(() =>
+            {
+                if (SoundManager.Instance != null) SoundManager.Instance.PlayButtonClick();
+                HapticManager.TriggerLight();
+                StartCoroutine(AnimateCrownSparkle(csgRt));
+            });
+
+            // 7. Living Idle Animation: Twinkling crown jewel, breathing buttons
+            HomeButtonBreather breather = m_ModeSelectPanel.AddComponent<HomeButtonBreather>();
             breather.crownStarGlintRt = csgRt;
-            breather.bgRaysRt = bgrRt;
-            if (bokehItems != null) breather.bokehItems = bokehItems;
+            breather.adventureBtnRt = advRt;
+            breather.classicBtnRt = clRt;
+            breather.ballDesignsPillRt = wdRt;
+
+            SkinManager.OnSkinChanged -= HandleSkinChangedForHome;
+            SkinManager.OnSkinChanged += HandleSkinChangedForHome;
+            UpdateHomeEquippedBallPreview();
 
             m_ModeSelectPanel.SetActive(false);
         }
@@ -2573,7 +2715,7 @@ namespace BoxBlast
             nextImg.color = Color.white;
             nextImg.raycastTarget = true;
 
-            GameObject nextTxtObj = CreateText(nextSideObj.transform, Vector2.zero, new Vector2(130f, 68f), "CH 2 ▶", 21, FontStyle.Bold, new Color(1.0f, 0.95f, 0.50f), TextAnchor.MiddleCenter, m_CandyFont);
+            GameObject nextTxtObj = CreateText(nextSideObj.transform, Vector2.zero, new Vector2(130f, 68f), "CH 2 >", 21, FontStyle.Bold, new Color(1.0f, 0.95f, 0.50f), TextAnchor.MiddleCenter, m_CandyFont);
             m_NextChapterSideText = nextTxtObj.GetComponent<Text>();
             MakeTextCrisp(m_NextChapterSideText, new Color(0.40f, 0.20f, 0.02f, 0.95f), 1.0f);
 
@@ -2679,12 +2821,12 @@ namespace BoxBlast
             if (m_PrevChapterSideRt != null)
             {
                 m_PrevChapterSideRt.gameObject.SetActive(m_LevelSelectPage > 0);
-                if (m_PrevChapterSideText != null) m_PrevChapterSideText.text = $"◀ CH {m_LevelSelectPage}";
+                if (m_PrevChapterSideText != null) m_PrevChapterSideText.text = $"< CH {m_LevelSelectPage}";
             }
             if (m_NextChapterSideRt != null)
             {
                 m_NextChapterSideRt.gameObject.SetActive(m_LevelSelectPage < maxPage);
-                if (m_NextChapterSideText != null) m_NextChapterSideText.text = $"CH {m_LevelSelectPage + 2} ▶";
+                if (m_NextChapterSideText != null) m_NextChapterSideText.text = $"CH {m_LevelSelectPage + 2} >";
             }
 
             int totalStars = GetTotalModeStars(mode);
@@ -2982,50 +3124,146 @@ namespace BoxBlast
                 });
             }
 
-            // Milestone Chests mapped to 3D chests along the cosmic road
-            (Vector2 pos, string skinName)[] milestoneChests;
+            // Milestone Chests mapped directly over the golden rails on the cosmic road (every 5 levels unlock a new Ball Skin!)
+            (Vector2 pos, int targetLevel, BallSkinType skinType, string skinName)[] milestoneChests;
             if (m_LevelSelectPage == 0)
             {
-                milestoneChests = new (Vector2, string)[]
+                milestoneChests = new (Vector2, int, BallSkinType, string)[]
                 {
-                    (new Vector2(-399.4f, -337.7f * scaleY), "Star Core Ball Skin!"),
-                    (new Vector2( 416.2f, -491.2f * scaleY), "Orange Planet Ball Skin!"),
-                    (new Vector2( 402.2f,  -58.6f * scaleY), "Mystic Orb Ball Skin!"),
-                    (new Vector2(-399.4f,  108.8f * scaleY), "Solar Flare Ball Skin!"),
-                    (new Vector2( 353.0f,  304.2f * scaleY), "Cyan Wave Ball Skin!")
+                    (new Vector2( 328.4f, -452.8f * scaleY),  5, BallSkinType.StarCore,     "Star Core Ball Skin!"),
+                    (new Vector2(-346.6f, -233.0f * scaleY), 10, BallSkinType.OrangePlanet, "Orange Planet Ball Skin!"),
+                    (new Vector2( 331.9f,   -9.8f * scaleY), 15, BallSkinType.LimeMint,     "Lime Mint Ball Skin!"),
+                    (new Vector2(-353.7f,  206.5f * scaleY), 20, BallSkinType.RainbowBlast, "Rainbow Blast Ball Skin!"),
+                    (new Vector2( 296.7f,  384.4f * scaleY), 25, BallSkinType.GalaxySwirl,  "Mystic Orb Ball Skin!")
                 };
             }
             else
             {
-                milestoneChests = new (Vector2, string)[]
+                milestoneChests = new (Vector2, int, BallSkinType, string)[]
                 {
-                    (new Vector2(-399.4f, -337.7f * scaleY), "Cosmic Matrix Vault: +500 Coins & Extra Moves!"),
-                    (new Vector2( 416.2f, -491.2f * scaleY), "Starlight Treasury: +800 Coins & Power Burst!"),
-                    (new Vector2( 402.2f,  -58.6f * scaleY), "Nebula Cache: +1,000 Coins & Star Gems!"),
-                    (new Vector2(-399.4f,  108.8f * scaleY), "Grand Valkyrie Vault: +1,500 Coins & Royal Shield!"),
-                    (new Vector2( 353.0f,  304.2f * scaleY), "Crown of Sovereigns: Master Champion Trophy!")
+                    (new Vector2( 328.4f, -452.8f * scaleY), 25, BallSkinType.GalaxySwirl,   "Mystic Orb Ball Skin!"),
+                    (new Vector2(-346.6f, -233.0f * scaleY), 30, BallSkinType.SunBurst,      "Solar Flare Ball Skin!"),
+                    (new Vector2( 331.9f,   -9.8f * scaleY), 35, BallSkinType.LightningVolt,  "Lightning Plasma Ball Skin!"),
+                    (new Vector2(-353.7f,  206.5f * scaleY), 40, BallSkinType.CyanWave,       "Cyan Wave Ball Skin!"),
+                    (new Vector2( 296.7f,  384.4f * scaleY), 50, BallSkinType.Classic,        "Crown Sovereign Vault: +2,500 Coins!")
                 };
             }
 
             for (int ci = 0; ci < milestoneChests.Length; ci++)
             {
                 var chestInfo = milestoneChests[ci];
-                GameObject chestObj = new GameObject($"MilestoneChest_{ci + 1}");
+                int targetLvl = chestInfo.targetLevel;
+                BallSkinType skin = chestInfo.skinType;
+                string rewardText = chestInfo.skinName;
+
+                bool isConditionMet = LevelManager.IsLevelUnlocked(mode, targetLvl + 1) || LevelManager.GetLevelStars(mode, targetLvl) > 0;
+                bool isClaimed = PlayerPrefs.GetInt("ChestClaimed_Level_" + targetLvl, 0) == 1 || (skin != BallSkinType.Classic && SkinManager.IsSkinUnlocked(skin));
+
+                GameObject chestObj = new GameObject($"MilestoneChest_{targetLvl}");
                 chestObj.transform.SetParent(m_LevelGridContainer, false);
                 RectTransform cRt = chestObj.AddComponent<RectTransform>();
                 cRt.anchoredPosition = chestInfo.pos;
-                cRt.sizeDelta = new Vector2(130f, 130f);
-                Image cImg = chestObj.AddComponent<Image>();
-                cImg.color = new Color(1f, 1f, 1f, 0.001f);
-                cImg.raycastTarget = true;
+                cRt.sizeDelta = new Vector2(176f, 176f);
+
+                // Subtle 3D contact shadow under the chest resting on the clean road
+                GameObject shadowObj = new GameObject("ChestShadow");
+                shadowObj.transform.SetParent(chestObj.transform, false);
+                RectTransform sRt = shadowObj.AddComponent<RectTransform>();
+                sRt.anchoredPosition = new Vector2(0f, -22f);
+                sRt.sizeDelta = new Vector2(130f, 48f);
+                Image sImg = shadowObj.AddComponent<Image>();
+                sImg.sprite = SpriteFactory.GetPillSprite(new Color(0.01f, 0.03f, 0.12f, 0.45f));
+                sImg.raycastTarget = false;
+
+                // 1. If Claimable & Not Yet Opened: Glowing Golden Aura behind the chest
+                if (isConditionMet && !isClaimed)
+                {
+                    GameObject auraObj = new GameObject("ChestAura");
+                    auraObj.transform.SetParent(chestObj.transform, false);
+                    RectTransform aRt = auraObj.AddComponent<RectTransform>();
+                    aRt.sizeDelta = new Vector2(215f, 215f);
+                    Image aImg = auraObj.AddComponent<Image>();
+                    aImg.sprite = SpriteFactory.GetCircleSprite(new Color(1f, 0.86f, 0.22f, 0.55f));
+                    aImg.raycastTarget = false;
+                    StartCoroutine(PulseActiveHalo(aRt));
+                }
+
+                // 2. 3D Chest Visual
+                GameObject imgObj = new GameObject("ChestVisual");
+                imgObj.transform.SetParent(chestObj.transform, false);
+                RectTransform imgRt = imgObj.AddComponent<RectTransform>();
+                imgRt.sizeDelta = new Vector2(174f, 174f);
+                Image cImg = imgObj.AddComponent<Image>();
+                cImg.raycastTarget = false;
+
+                if (isClaimed)
+                {
+                    cImg.sprite = SpriteFactory.GetTreasureChestOpenSprite();
+                    cImg.color = Color.white;
+
+                    // Unlocked mini ball badge on the chest
+                    if (skin != BallSkinType.Classic)
+                    {
+                        GameObject badge = new GameObject("SkinBadge");
+                        badge.transform.SetParent(chestObj.transform, false);
+                        RectTransform bRt = badge.AddComponent<RectTransform>();
+                        bRt.anchoredPosition = new Vector2(46f, 46f);
+                        bRt.sizeDelta = new Vector2(46f, 46f);
+                        Image bImg = badge.AddComponent<Image>();
+                        bImg.sprite = SpriteFactory.GetWardrobeSkinSprite(skin);
+                        bImg.raycastTarget = false;
+                    }
+                }
+                else if (isConditionMet)
+                {
+                    // Ready to open!
+                    cImg.sprite = SpriteFactory.GetTreasureChestClosedSprite();
+                    cImg.color = Color.white;
+                    StartCoroutine(AnimateBouncyChest(cRt));
+                }
+                else
+                {
+                    // Locked: Slightly darkened with Level badge
+                    cImg.sprite = SpriteFactory.GetTreasureChestClosedSprite();
+                    cImg.color = new Color(0.72f, 0.72f, 0.78f, 0.95f);
+
+                    GameObject tagObj = new GameObject("LevelTag");
+                    tagObj.transform.SetParent(chestObj.transform, false);
+                    RectTransform tagRt = tagObj.AddComponent<RectTransform>();
+                    tagRt.anchoredPosition = new Vector2(0f, -64f);
+                    tagRt.sizeDelta = new Vector2(92f, 32f);
+                    Image tagBg = tagObj.AddComponent<Image>();
+                    tagBg.sprite = SpriteFactory.GetPillSprite(new Color(0.04f, 0.08f, 0.22f, 0.92f));
+                    tagBg.raycastTarget = false;
+
+                    GameObject tagTxtObj = CreateText(tagObj.transform, Vector2.zero, new Vector2(92f, 30f), $"LVL {targetLvl}", 18, FontStyle.Bold, new Color(1f, 0.88f, 0.35f, 1f), TextAnchor.MiddleCenter, m_CandyFont);
+                    Text tagTxt = tagTxtObj.GetComponent<Text>();
+                    MakeTextCrisp(tagTxt, new Color(0.02f, 0.04f, 0.12f, 0.95f), 1f);
+                }
+
+                // 3. Interactive Touch Button
                 Button cBtn = chestObj.AddComponent<Button>();
-                string rewardText = chestInfo.skinName;
+                cBtn.transition = Selectable.Transition.None;
                 cBtn.onClick.AddListener(() =>
                 {
                     if (m_IsLevelSelectTransitioning) return;
-                    if (SoundManager.Instance != null) SoundManager.Instance.PlayButtonClick();
-                    HapticManager.TriggerLight();
-                    ShowToast($"Milestone Reward: {rewardText}");
+                    if (isClaimed)
+                    {
+                        if (SoundManager.Instance != null) SoundManager.Instance.PlayButtonClick();
+                        HapticManager.TriggerLight();
+                        ShowMilestoneRewardCard(rewardText);
+                    }
+                    else if (isConditionMet)
+                    {
+                        // Open Chest with Grand Unboxing Sequence!
+                        ShowChestUnboxingModal(targetLvl, skin, rewardText);
+                    }
+                    else
+                    {
+                        if (SoundManager.Instance != null) SoundManager.Instance.PlayButtonClick();
+                        HapticManager.TriggerLight();
+                        ShowToast($"Complete Level {targetLvl} to unlock this Treasure Chest!");
+                    }
                 });
             }
         }
@@ -3043,7 +3281,466 @@ namespace BoxBlast
             }
         }
 
-        public void ShowToast(string message, float duration = 2.0f)
+        private System.Collections.IEnumerator AnimateBouncyChest(RectTransform rt)
+        {
+            if (rt == null) yield break;
+            Vector3 baseScale = Vector3.one;
+            while (rt != null && rt.gameObject.activeInHierarchy)
+            {
+                float t = Mathf.PingPong(Time.unscaledTime * 1.6f, 1f);
+                float sY = Mathf.Lerp(0.96f, 1.08f, t);
+                float sX = Mathf.Lerp(1.04f, 0.96f, t);
+                rt.localScale = new Vector3(baseScale.x * sX, baseScale.y * sY, 1f);
+                yield return null;
+            }
+        }
+
+        private GameObject m_ChestUnboxingModal;
+
+        public void ShowChestUnboxingModal(int milestoneLevel, BallSkinType skinType, string fallbackReward)
+        {
+            if (m_RootCanvas == null) return;
+            if (m_ChestUnboxingModal != null)
+            {
+                Destroy(m_ChestUnboxingModal);
+                m_ChestUnboxingModal = null;
+            }
+
+            m_ChestUnboxingModal = new GameObject("ChestUnboxingModal");
+            m_ChestUnboxingModal.transform.SetParent(m_RootCanvas, false);
+            m_ChestUnboxingModal.transform.SetAsLastSibling();
+
+            RectTransform rootRt = m_ChestUnboxingModal.AddComponent<RectTransform>();
+            rootRt.anchorMin = Vector2.zero;
+            rootRt.anchorMax = Vector2.one;
+            rootRt.sizeDelta = Vector2.zero;
+
+            // Fullscreen Dark Backdrop
+            Image bg = m_ChestUnboxingModal.AddComponent<Image>();
+            bg.color = new Color(0.02f, 0.04f, 0.12f, 0.94f);
+            bg.raycastTarget = true;
+
+            StartCoroutine(AnimateChestUnboxingSequence(m_ChestUnboxingModal, milestoneLevel, skinType, fallbackReward));
+        }
+
+        private System.Collections.IEnumerator AnimateChestUnboxingSequence(GameObject modalObj, int milestoneLevel, BallSkinType skinType, string fallbackReward)
+        {
+            if (modalObj == null) yield break;
+
+            // Container
+            GameObject container = new GameObject("Container");
+            container.transform.SetParent(modalObj.transform, false);
+            RectTransform cRt = container.AddComponent<RectTransform>();
+            cRt.anchoredPosition = Vector2.zero;
+            cRt.sizeDelta = new Vector2(720f, 900f);
+
+            // 1. Rotating Golden Rays behind chest
+            GameObject raysObj = new GameObject("GodRays");
+            raysObj.transform.SetParent(container.transform, false);
+            RectTransform raysRt = raysObj.AddComponent<RectTransform>();
+            raysRt.anchoredPosition = new Vector2(0f, 30f);
+            raysRt.sizeDelta = new Vector2(620f, 620f);
+            Image raysImg = raysObj.AddComponent<Image>();
+            raysImg.sprite = GemIconFactory.GetSparkleIcon3D();
+            raysImg.color = new Color(1f, 0.88f, 0.30f, 0.35f);
+            raysImg.raycastTarget = false;
+
+            // 2. Title Text
+            GameObject titleObj = CreateText(container.transform, new Vector2(0f, 330f), new Vector2(700f, 80f), $"LEVEL {milestoneLevel} CHEST!", 44, FontStyle.Bold, Color.white, TextAnchor.MiddleCenter, m_CandyFont);
+            Text titleTxt = titleObj.GetComponent<Text>();
+            MakeTextCrisp(titleTxt, new Color(0.50f, 0.25f, 0.02f, 0.95f), 1.2f);
+
+            // 3. 3D Chest GameObject
+            GameObject chestImgObj = new GameObject("Chest3D");
+            chestImgObj.transform.SetParent(container.transform, false);
+            RectTransform chestRt = chestImgObj.AddComponent<RectTransform>();
+            chestRt.anchoredPosition = new Vector2(0f, -20f);
+            chestRt.sizeDelta = new Vector2(340f, 340f);
+            Image chestImg = chestImgObj.AddComponent<Image>();
+            chestImg.sprite = SpriteFactory.GetTreasureChestClosedSprite();
+            chestImg.raycastTarget = false;
+
+            // Phase 1: Anticipation Rattle & Shake (0.75 seconds)
+            float shakeDur = 0.75f;
+            float elapsed = 0f;
+            float nextHaptic = 0f;
+            while (elapsed < shakeDur && modalObj != null)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                float progress = elapsed / shakeDur;
+                float shakeX = Mathf.Sin(elapsed * 45f) * (8f + progress * 6f);
+                float tiltZ = Mathf.Cos(elapsed * 40f) * (4f + progress * 5f);
+                chestRt.anchoredPosition = new Vector2(shakeX, -20f);
+                chestRt.localEulerAngles = new Vector3(0f, 0f, tiltZ);
+                chestRt.localScale = Vector3.one * (1f + progress * 0.12f);
+                raysRt.Rotate(0f, 0f, -40f * Time.unscaledDeltaTime);
+
+                if (elapsed >= nextHaptic)
+                {
+                    nextHaptic += 0.16f;
+                    HapticManager.TriggerMedium();
+                    if (SoundManager.Instance != null) SoundManager.Instance.PlayButtonClick();
+                }
+                yield return null;
+            }
+
+            // Phase 2: POP OPEN & BURST!
+            if (modalObj == null) yield break;
+            chestImg.sprite = SpriteFactory.GetTreasureChestOpenSprite();
+            chestRt.anchoredPosition = new Vector2(0f, -20f);
+            chestRt.localEulerAngles = Vector3.zero;
+
+            if (SoundManager.Instance != null) SoundManager.Instance.PlayAchievement();
+            HapticManager.TriggerHeavy();
+
+            // Elastic pop scale on chest
+            float popDur = 0.25f;
+            elapsed = 0f;
+            while (elapsed < popDur && modalObj != null)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                float t = elapsed / popDur;
+                float s = Mathf.Lerp(1.35f, 1.05f, Mathf.Sin(t * Mathf.PI * 0.5f));
+                chestRt.localScale = Vector3.one * s;
+                raysRt.Rotate(0f, 0f, -80f * Time.unscaledDeltaTime);
+                yield return null;
+            }
+            chestRt.localScale = Vector3.one * 1.05f;
+
+            // Phase 3: New Ball Design Emerges from the Open Chest
+            SkinInfo info = SkinManager.GetSkinInfo(skinType);
+            GameObject ballObj = new GameObject("EmergingBall");
+            ballObj.transform.SetParent(container.transform, false);
+            ballObj.transform.SetAsLastSibling();
+            RectTransform ballRt = ballObj.AddComponent<RectTransform>();
+            ballRt.anchoredPosition = new Vector2(0f, -20f);
+            ballRt.sizeDelta = new Vector2(190f, 190f);
+            ballRt.localScale = Vector3.one * 0.2f;
+
+            // Ball aura
+            GameObject ballAura = new GameObject("BallAura");
+            ballAura.transform.SetParent(ballObj.transform, false);
+            RectTransform baRt = ballAura.AddComponent<RectTransform>();
+            baRt.sizeDelta = new Vector2(260f, 260f);
+            Image baImg = ballAura.AddComponent<Image>();
+            baImg.sprite = SpriteFactory.GetCircleSprite(new Color(1f, 0.90f, 0.35f, 0.65f));
+            baImg.raycastTarget = false;
+
+            Image ballImg = ballObj.AddComponent<Image>();
+            ballImg.sprite = SpriteFactory.GetWardrobeSkinSprite(skinType);
+            ballImg.raycastTarget = false;
+
+            // Float upward animation
+            float floatDur = 0.85f;
+            elapsed = 0f;
+            while (elapsed < floatDur && modalObj != null)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                float t = Mathf.Clamp01(elapsed / floatDur);
+                // Ease out cubic
+                float smooth = 1f - Mathf.Pow(1f - t, 3f);
+                float curY = Mathf.Lerp(-20f, 175f, smooth);
+                float curScale = Mathf.Lerp(0.2f, 1.30f, smooth);
+                ballRt.anchoredPosition = new Vector2(0f, curY);
+                ballRt.localScale = Vector3.one * curScale;
+                raysRt.Rotate(0f, 0f, -60f * Time.unscaledDeltaTime);
+                yield return null;
+            }
+            ballRt.anchoredPosition = new Vector2(0f, 175f);
+            ballRt.localScale = Vector3.one * 1.30f;
+
+            if (SoundManager.Instance != null) SoundManager.Instance.PlayCombo();
+
+            // Phase 4: Announcement & Equip Action
+            titleTxt.text = "NEW BALL UNLOCKED!";
+            MakeTextCrisp(titleTxt, new Color(0.95f, 0.65f, 0.05f, 0.98f), 1.2f);
+
+            // Subtitle Card
+            GameObject subCard = new GameObject("SubCard");
+            subCard.transform.SetParent(container.transform, false);
+            RectTransform scRt = subCard.AddComponent<RectTransform>();
+            scRt.anchoredPosition = new Vector2(0f, -145f);
+            scRt.sizeDelta = new Vector2(620f, 90f);
+            Image scBg = subCard.AddComponent<Image>();
+            scBg.sprite = SpriteFactory.GetPillSprite(new Color(0.04f, 0.09f, 0.24f, 0.92f));
+            scBg.raycastTarget = false;
+
+            string skinDisplayName = (info != null && !string.IsNullOrEmpty(info.Name)) ? info.Name.ToUpper() : "COSMIC SPHERE";
+            string skinDesc = (info != null && !string.IsNullOrEmpty(info.Description)) ? info.Description : "Exclusive 3D ball design!";
+
+            GameObject nameTxtObj = CreateText(subCard.transform, new Vector2(0f, 16f), new Vector2(600f, 40f), $"{skinDisplayName} BALL", 28, FontStyle.Bold, new Color(1f, 0.88f, 0.35f, 1f), TextAnchor.MiddleCenter, m_CandyFont);
+            Text nameTxt = nameTxtObj.GetComponent<Text>();
+            MakeTextCrisp(nameTxt, new Color(0.02f, 0.04f, 0.12f, 0.95f), 1.1f);
+
+            GameObject descTxtObj = CreateText(subCard.transform, new Vector2(0f, -20f), new Vector2(580f, 32f), skinDesc, 20, FontStyle.Normal, new Color(0.85f, 0.92f, 1f, 0.90f), TextAnchor.MiddleCenter, m_CandyFont);
+            Text descTxt = descTxtObj.GetComponent<Text>();
+            MakeTextCrisp(descTxt, new Color(0.02f, 0.04f, 0.12f, 0.95f), 0.8f);
+
+            // Mark Skin Unlocked and Chest Claimed in PlayerPrefs
+            if (skinType != BallSkinType.Classic)
+            {
+                SkinManager.UnlockSkin(skinType);
+            }
+            PlayerPrefs.SetInt("ChestClaimed_Level_" + milestoneLevel, 1);
+            PlayerPrefs.Save();
+
+            // Button Tray
+            GameObject btnTray = new GameObject("ButtonTray");
+            btnTray.transform.SetParent(container.transform, false);
+            RectTransform btRt = btnTray.AddComponent<RectTransform>();
+            btRt.anchoredPosition = new Vector2(0f, -265f);
+            btRt.sizeDelta = new Vector2(620f, 85f);
+
+            // Button 1: EQUIP NOW (Gold 3D)
+            GameObject equipBtnObj = new GameObject("EquipBtn");
+            equipBtnObj.transform.SetParent(btnTray.transform, false);
+            RectTransform ebRt = equipBtnObj.AddComponent<RectTransform>();
+            ebRt.anchoredPosition = new Vector2(-120f, 0f);
+            ebRt.sizeDelta = new Vector2(280f, 78f);
+            Image ebBg = equipBtnObj.AddComponent<Image>();
+            ebBg.sprite = SpriteFactory.GetRoundedButtonSprite(new Color(0.98f, 0.72f, 0.15f, 1f), new Color(0.55f, 0.28f, 0.02f, 1f), 0.18f);
+            Button ebBtn = equipBtnObj.AddComponent<Button>();
+
+            GameObject ebTxtObj = CreateText(equipBtnObj.transform, Vector2.zero, new Vector2(260f, 70f), "EQUIP NOW", 28, FontStyle.Bold, Color.white, TextAnchor.MiddleCenter, m_CandyFont);
+            Text ebTxt = ebTxtObj.GetComponent<Text>();
+            MakeTextCrisp(ebTxt, new Color(0.45f, 0.22f, 0.02f, 0.95f), 1.1f);
+
+            // Button 2: AWESOME (Cosmic Navy)
+            GameObject okBtnObj = new GameObject("AwesomeBtn");
+            okBtnObj.transform.SetParent(btnTray.transform, false);
+            RectTransform obRt = okBtnObj.AddComponent<RectTransform>();
+            obRt.anchoredPosition = new Vector2(170f, 0f);
+            obRt.sizeDelta = new Vector2(200f, 78f);
+            Image obBg = okBtnObj.AddComponent<Image>();
+            obBg.sprite = SpriteFactory.GetRoundedButtonSprite(new Color(0.08f, 0.18f, 0.40f, 1f), new Color(0.20f, 0.45f, 0.85f, 1f), 0.18f);
+            Button obBtn = okBtnObj.AddComponent<Button>();
+
+            GameObject obTxtObj = CreateText(okBtnObj.transform, Vector2.zero, new Vector2(180f, 70f), "AWESOME", 24, FontStyle.Bold, Color.white, TextAnchor.MiddleCenter, m_CandyFont);
+            Text obTxt = obTxtObj.GetComponent<Text>();
+            MakeTextCrisp(obTxt, new Color(0.02f, 0.06f, 0.18f, 0.95f), 1.0f);
+
+            System.Action closeAction = () =>
+            {
+                if (modalObj != null) Destroy(modalObj);
+                m_ChestUnboxingModal = null;
+                RefreshLevelSelectGrid(GameModeType.Adventure);
+            };
+
+            ebBtn.onClick.AddListener(() =>
+            {
+                SkinManager.EquipSkin(skinType);
+                ebTxt.text = "EQUIPPED! ✓";
+                ebBtn.interactable = false;
+                HapticManager.TriggerLight();
+                if (SoundManager.Instance != null) SoundManager.Instance.PlayPlace();
+                StartCoroutine(DelayedCloseModal(1.0f, closeAction));
+            });
+
+            obBtn.onClick.AddListener(() =>
+            {
+                if (SoundManager.Instance != null) SoundManager.Instance.PlayButtonClick();
+                HapticManager.TriggerLight();
+                closeAction();
+            });
+        }
+
+        private System.Collections.IEnumerator DelayedCloseModal(float delay, System.Action callback)
+        {
+            yield return new WaitForSecondsRealtime(delay);
+            callback?.Invoke();
+        }
+
+        public void ShowMilestoneRewardCard(string rawReward)
+        {
+            if (m_RootCanvas == null) return;
+            if (m_ToastCoroutine != null)
+            {
+                StopCoroutine(m_ToastCoroutine);
+                m_ToastCoroutine = null;
+            }
+            if (m_ToastObj != null)
+            {
+                Destroy(m_ToastObj);
+                m_ToastObj = null;
+            }
+
+            m_ToastCoroutine = StartCoroutine(AnimateMilestoneRewardCard(rawReward));
+        }
+
+        private System.Collections.IEnumerator AnimateMilestoneRewardCard(string rawReward)
+        {
+            if (SoundManager.Instance != null) SoundManager.Instance.PlayAchievement();
+            HapticManager.TriggerMedium();
+
+            string mainTitle = rawReward;
+            string subTitle = "Special Adventure Milestone!";
+
+            if (rawReward.Contains(":"))
+            {
+                string[] parts = rawReward.Split(new char[] { ':' }, 2);
+                mainTitle = parts[0].Trim();
+                subTitle = parts[1].Trim();
+            }
+            else if (rawReward.EndsWith("Skin!"))
+            {
+                mainTitle = rawReward.Replace("Skin!", "Ball Skin").Trim();
+                subTitle = "Exclusive Cosmic Design!";
+            }
+
+            Sprite iconSprite = GemIconFactory.GetTrophySprite();
+            if (rawReward.IndexOf("Crown", System.StringComparison.OrdinalIgnoreCase) >= 0 || rawReward.IndexOf("Sovereign", System.StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                iconSprite = GemIconFactory.GetCrownSprite();
+            }
+            else if (rawReward.IndexOf("Coin", System.StringComparison.OrdinalIgnoreCase) >= 0 || rawReward.IndexOf("Vault", System.StringComparison.OrdinalIgnoreCase) >= 0 || rawReward.IndexOf("Treasury", System.StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                iconSprite = GemIconFactory.GetCoinSprite();
+            }
+            else if (rawReward.IndexOf("Ball", System.StringComparison.OrdinalIgnoreCase) >= 0 || rawReward.IndexOf("Skin", System.StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                iconSprite = GemIconFactory.GetSparkleIcon3D();
+            }
+
+            m_ToastObj = new GameObject("MilestoneRewardCard");
+            m_ToastObj.transform.SetParent(m_RootCanvas, false);
+            m_ToastObj.transform.SetAsLastSibling();
+
+            RectTransform cardRt = m_ToastObj.AddComponent<RectTransform>();
+            cardRt.anchorMin = new Vector2(0.5f, 0.5f);
+            cardRt.anchorMax = new Vector2(0.5f, 0.5f);
+            cardRt.anchoredPosition = new Vector2(0f, 10f);
+            cardRt.sizeDelta = new Vector2(760f, 200f);
+
+            // 1. Soft glowing outer backdrop aura
+            GameObject glowObj = new GameObject("OuterGlow");
+            glowObj.transform.SetParent(m_ToastObj.transform, false);
+            RectTransform glowRt = glowObj.AddComponent<RectTransform>();
+            glowRt.sizeDelta = new Vector2(810f, 250f);
+            Image glowImg = glowObj.AddComponent<Image>();
+            glowImg.sprite = SpriteFactory.GetPillSprite(new Color(0.02f, 0.05f, 0.16f, 0.88f));
+            glowImg.raycastTarget = false;
+
+            // 2. High-Definition 3D Royal Golden-Beveled Plaque
+            Image bg = m_ToastObj.AddComponent<Image>();
+            bg.sprite = SpriteFactory.GetHeaderPlaqueSprite(true);
+            bg.type = Image.Type.Sliced;
+            bg.color = Color.white;
+            bg.raycastTarget = true;
+
+            // Interactive dismiss on tap
+            Button cardBtn = m_ToastObj.AddComponent<Button>();
+            cardBtn.transition = Selectable.Transition.None;
+            cardBtn.onClick.AddListener(() =>
+            {
+                if (m_ToastCoroutine != null) StopCoroutine(m_ToastCoroutine);
+                StartCoroutine(AnimateToastDismiss(m_ToastObj));
+            });
+
+            // 3. Left 3D Icon Container
+            GameObject iconBox = new GameObject("IconContainer");
+            iconBox.transform.SetParent(m_ToastObj.transform, false);
+            RectTransform ibRt = iconBox.AddComponent<RectTransform>();
+            ibRt.anchoredPosition = new Vector2(-270f, 0f);
+            ibRt.sizeDelta = new Vector2(130f, 130f);
+
+            // Radial Aura behind icon
+            GameObject auraObj = new GameObject("IconAura");
+            auraObj.transform.SetParent(iconBox.transform, false);
+            RectTransform aRt = auraObj.AddComponent<RectTransform>();
+            aRt.sizeDelta = new Vector2(120f, 120f);
+            Image aImg = auraObj.AddComponent<Image>();
+            aImg.sprite = SpriteFactory.GetSoftGlowOrbSprite();
+            aImg.color = new Color(1.0f, 0.82f, 0.25f, 0.35f);
+            aImg.raycastTarget = false;
+
+            // 3D Trophy / Crown Sprite Icon
+            GameObject iconObj = new GameObject("RewardIcon");
+            iconObj.transform.SetParent(iconBox.transform, false);
+            RectTransform iRt = iconObj.AddComponent<RectTransform>();
+            iRt.sizeDelta = new Vector2(92f, 92f);
+            Image iImg = iconObj.AddComponent<Image>();
+            iImg.sprite = iconSprite;
+            iImg.preserveAspect = true;
+            iImg.raycastTarget = false;
+
+            // Diamond Twinkle Star on corner of icon
+            GameObject twinkleObj = new GameObject("IconSparkle");
+            twinkleObj.transform.SetParent(iconBox.transform, false);
+            RectTransform twRt = twinkleObj.AddComponent<RectTransform>();
+            twRt.anchoredPosition = new Vector2(36f, 36f);
+            twRt.sizeDelta = new Vector2(34f, 34f);
+            Image twImg = twinkleObj.AddComponent<Image>();
+            twImg.sprite = GemIconFactory.GetStarSprite(true);
+            twImg.color = new Color(1f, 0.95f, 0.70f, 0.95f);
+            twImg.raycastTarget = false;
+
+            // 4. Right Content Area (Anchored X: -180 to +350)
+            // 4a. Header Category Pill Tag
+            GameObject tagPill = new GameObject("HeaderTagPill");
+            tagPill.transform.SetParent(m_ToastObj.transform, false);
+            RectTransform tpRt = tagPill.AddComponent<RectTransform>();
+            tpRt.anchoredPosition = new Vector2(75f, 54f);
+            tpRt.sizeDelta = new Vector2(300f, 30f);
+            Image tpImg = tagPill.AddComponent<Image>();
+            tpImg.sprite = SpriteFactory.Get3DPillBadgeSprite(new Color(0.12f, 0.42f, 0.85f), new Color(0.04f, 0.18f, 0.45f));
+            tpImg.type = Image.Type.Sliced;
+            tpImg.raycastTarget = false;
+
+            GameObject tagTxtObj = CreateText(tagPill.transform, Vector2.zero, new Vector2(300f, 30f), "★ MILESTONE REWARD ★", 18, FontStyle.Normal, new Color(0.65f, 0.94f, 1.0f), TextAnchor.MiddleCenter, m_CandyFont);
+            MakeTextCrisp(tagTxtObj.GetComponent<Text>(), new Color(0.01f, 0.05f, 0.20f, 0.95f), 1.2f);
+
+            // 4b. Main Reward Title (Radiant Sun Gold, Razor Sharp, No Faux-Bold Smearing)
+            GameObject titleObj = CreateText(m_ToastObj.transform, new Vector2(75f, 12f), new Vector2(490f, 44f), mainTitle.ToUpper(), 30, FontStyle.Normal, new Color(1.0f, 0.92f, 0.42f), TextAnchor.MiddleLeft, m_CandyFont);
+            Text titleTxt = titleObj.GetComponent<Text>();
+            titleTxt.resizeTextForBestFit = true;
+            titleTxt.resizeTextMinSize = 22;
+            titleTxt.resizeTextMaxSize = 30;
+            MakeTextCrisp(titleTxt, new Color(0.32f, 0.15f, 0.02f, 0.98f), 2.2f);
+
+            // 4c. Subtitle / Description (Clean Ice Cream White)
+            GameObject subObj = CreateText(m_ToastObj.transform, new Vector2(75f, -28f), new Vector2(490f, 36f), subTitle, 22, FontStyle.Normal, new Color(0.92f, 0.97f, 1.0f), TextAnchor.MiddleLeft, m_CandyFont);
+            Text subTxt = subObj.GetComponent<Text>();
+            subTxt.resizeTextForBestFit = true;
+            subTxt.resizeTextMinSize = 16;
+            subTxt.resizeTextMaxSize = 22;
+            MakeTextCrisp(subTxt, new Color(0.02f, 0.08f, 0.24f, 0.95f), 1.5f);
+
+            // 4d. Bottom Tap to Close Hint
+            GameObject hintObj = CreateText(m_ToastObj.transform, new Vector2(75f, -62f), new Vector2(490f, 22f), "TAP TO DISMISS", 14, FontStyle.Normal, new Color(1.0f, 1.0f, 1.0f, 0.45f), TextAnchor.MiddleLeft, m_CandyFont);
+            MakeTextCrisp(hintObj.GetComponent<Text>(), new Color(0.02f, 0.04f, 0.12f, 0.90f), 1.0f);
+
+            // Juicy Spring Pop In
+            m_ToastObj.transform.localScale = Vector3.zero;
+            float elapsed = 0f;
+            float inDur = 0.22f;
+            while (elapsed < inDur)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                float p = elapsed / inDur;
+                float s = Mathf.Sin(p * Mathf.PI * 0.5f);
+                if (m_ToastObj != null) m_ToastObj.transform.localScale = Vector3.one * s;
+                if (twinkleObj != null) twinkleObj.transform.Rotate(0f, 0f, 180f * Time.unscaledDeltaTime);
+                yield return null;
+            }
+            if (m_ToastObj != null) m_ToastObj.transform.localScale = Vector3.one;
+
+            // Dwell on screen
+            float stay = 3.5f;
+            while (stay > 0f)
+            {
+                stay -= Time.unscaledDeltaTime;
+                if (twinkleObj != null) twinkleObj.transform.Rotate(0f, 0f, 90f * Time.unscaledDeltaTime);
+                yield return null;
+            }
+
+            if (m_ToastObj != null)
+            {
+                yield return StartCoroutine(AnimateToastDismiss(m_ToastObj));
+            }
+            m_ToastCoroutine = null;
+        }
+
+        public void ShowToast(string message, float duration = 2.4f)
         {
             if (m_RootCanvas == null) return;
             if (m_ToastCoroutine != null)
@@ -3069,63 +3766,104 @@ namespace BoxBlast
             RectTransform rt = m_ToastObj.AddComponent<RectTransform>();
             rt.anchorMin = new Vector2(0.5f, 0.5f);
             rt.anchorMax = new Vector2(0.5f, 0.5f);
-            rt.anchoredPosition = new Vector2(0f, -60f);
-            rt.sizeDelta = new Vector2(640f, 90f);
+            rt.anchoredPosition = new Vector2(0f, 30f);
+            rt.sizeDelta = new Vector2(740f, 110f);
 
+            // 1. Soft glowing outer shadow
+            GameObject glowObj = new GameObject("OuterGlow");
+            glowObj.transform.SetParent(m_ToastObj.transform, false);
+            RectTransform glowRt = glowObj.AddComponent<RectTransform>();
+            glowRt.sizeDelta = new Vector2(780f, 140f);
+            Image glowImg = glowObj.AddComponent<Image>();
+            glowImg.sprite = SpriteFactory.GetPillSprite(new Color(0.02f, 0.05f, 0.16f, 0.88f));
+            glowImg.raycastTarget = false;
+
+            // 2. 3D Beveled Royal Badge
             Image bg = m_ToastObj.AddComponent<Image>();
-            bg.sprite = SpriteFactory.GetPillSprite(new Color(0.06f, 0.10f, 0.20f, 0.95f));
-            bg.raycastTarget = false;
+            bg.sprite = SpriteFactory.Get3DPillBadgeSprite(new Color(0.08f, 0.16f, 0.32f, 0.98f), new Color(0.03f, 0.08f, 0.20f, 1f));
+            bg.type = Image.Type.Sliced;
+            bg.raycastTarget = true;
 
+            Button dismissBtn = m_ToastObj.AddComponent<Button>();
+            dismissBtn.transition = Selectable.Transition.None;
+            dismissBtn.onClick.AddListener(() =>
+            {
+                if (m_ToastCoroutine != null) StopCoroutine(m_ToastCoroutine);
+                StartCoroutine(AnimateToastDismiss(m_ToastObj));
+            });
+
+            // 3. Icon on left
+            GameObject iconObj = new GameObject("ToastIcon");
+            iconObj.transform.SetParent(m_ToastObj.transform, false);
+            RectTransform iconRt = iconObj.AddComponent<RectTransform>();
+            iconRt.anchoredPosition = new Vector2(-305f, 0f);
+            iconRt.sizeDelta = new Vector2(56f, 56f);
+            Image iconImg = iconObj.AddComponent<Image>();
+            bool isLocked = message.IndexOf("locked", System.StringComparison.OrdinalIgnoreCase) >= 0;
+            iconImg.sprite = isLocked ? GemIconFactory.GetLockSprite() : GemIconFactory.GetStarSprite(true);
+            iconImg.preserveAspect = true;
+            iconImg.raycastTarget = false;
+
+            // 4. Clean crisp text
             GameObject textObj = new GameObject("ToastText");
             textObj.transform.SetParent(m_ToastObj.transform, false);
             RectTransform trt = textObj.AddComponent<RectTransform>();
-            trt.anchorMin = Vector2.zero;
-            trt.anchorMax = Vector2.one;
-            trt.sizeDelta = Vector2.zero;
+            trt.anchoredPosition = new Vector2(25f, 0f);
+            trt.sizeDelta = new Vector2(610f, 85f);
 
             Text txt = textObj.AddComponent<Text>();
             txt.font = m_CandyFont != null ? m_CandyFont : m_DefaultFont;
-            txt.fontSize = 28;
-            txt.fontStyle = FontStyle.Bold;
-            txt.color = new Color(1.0f, 0.88f, 0.25f);
+            txt.fontSize = 25;
+            txt.fontStyle = FontStyle.Normal; // Strictly Normal to prevent faux-bold contour blurring!
+            txt.color = isLocked ? new Color(1.0f, 0.88f, 0.50f) : new Color(0.70f, 0.94f, 1.0f);
             txt.alignment = TextAnchor.MiddleCenter;
             txt.text = message;
+            txt.resizeTextForBestFit = true;
+            txt.resizeTextMinSize = 18;
+            txt.resizeTextMaxSize = 25;
             txt.raycastTarget = false;
+            MakeTextCrisp(txt, new Color(0.02f, 0.06f, 0.20f, 0.98f), 1.8f);
 
-            Vector3 baseScale = Vector3.one;
+            // Pop in
             m_ToastObj.transform.localScale = Vector3.zero;
-
             float elapsed = 0f;
-            float inDur = 0.16f;
+            float inDur = 0.18f;
             while (elapsed < inDur)
             {
                 elapsed += Time.unscaledDeltaTime;
                 float p = Mathf.Sin((elapsed / inDur) * Mathf.PI * 0.5f);
-                if (m_ToastObj != null) m_ToastObj.transform.localScale = baseScale * p;
+                if (m_ToastObj != null) m_ToastObj.transform.localScale = Vector3.one * p;
                 yield return null;
             }
-            if (m_ToastObj != null) m_ToastObj.transform.localScale = baseScale;
+            if (m_ToastObj != null) m_ToastObj.transform.localScale = Vector3.one;
 
             yield return new WaitForSecondsRealtime(duration);
 
-            elapsed = 0f;
-            float outDur = 0.20f;
-            CanvasGroup cg = (m_ToastObj != null) ? m_ToastObj.AddComponent<CanvasGroup>() : null;
-            while (elapsed < outDur && m_ToastObj != null)
-            {
-                elapsed += Time.unscaledDeltaTime;
-                float p = elapsed / outDur;
-                if (cg != null) cg.alpha = 1f - p;
-                if (m_ToastObj != null) m_ToastObj.transform.localScale = baseScale * (1f - p * 0.2f);
-                yield return null;
-            }
-
             if (m_ToastObj != null)
             {
-                Destroy(m_ToastObj);
-                m_ToastObj = null;
+                yield return StartCoroutine(AnimateToastDismiss(m_ToastObj));
             }
             m_ToastCoroutine = null;
+        }
+
+        private System.Collections.IEnumerator AnimateToastDismiss(GameObject toast)
+        {
+            if (toast == null) yield break;
+            CanvasGroup cg = toast.GetComponent<CanvasGroup>();
+            if (cg == null) cg = toast.AddComponent<CanvasGroup>();
+            Vector3 startScale = toast.transform.localScale;
+            float elapsed = 0f;
+            float dur = 0.16f;
+            while (elapsed < dur && toast != null)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                float p = elapsed / dur;
+                if (cg != null) cg.alpha = 1f - p;
+                toast.transform.localScale = startScale * (1f - p * 0.25f);
+                yield return null;
+            }
+            if (toast != null) Destroy(toast);
+            if (m_ToastObj == toast) m_ToastObj = null;
         }
 
         private void ScrollToActiveLevel(GameModeType mode)
@@ -3526,6 +4264,9 @@ namespace BoxBlast
                 m_SkinWardrobeModal.SetActive(false);
             }
 
+            // Immediately refresh home preview
+            UpdateHomeEquippedBallPreview();
+
             // Immediately refresh board cells and spawner blocks with the equipped skin
             if (GridManager.Instance != null)
             {
@@ -3540,6 +4281,41 @@ namespace BoxBlast
             if (SoundManager.Instance != null)
             {
                 SoundManager.Instance.PlayButtonClick();
+            }
+        }
+
+        private void HandleSkinChangedForHome(BallSkinType newSkin)
+        {
+            UpdateHomeEquippedBallPreview();
+        }
+
+        private void UpdateHomeEquippedBallPreview()
+        {
+            BallSkinType skinType = SkinManager.CurrentSkin;
+            SkinInfo info = SkinManager.GetSkinInfo(skinType);
+            Sprite skinSprite = SpriteFactory.GetWardrobeSkinSprite(skinType);
+
+            if (m_HomeEquippedBallIcon != null)
+            {
+                m_HomeEquippedBallIcon.sprite = skinSprite;
+            }
+            if (m_HomeEquippedBallNameText != null)
+            {
+                m_HomeEquippedBallNameText.text = info != null ? info.Name.ToUpper() : "CLASSIC";
+            }
+            if (m_HomeCenterBallImage != null)
+            {
+                if (skinType != BallSkinType.Classic)
+                {
+                    m_HomeCenterBallImage.sprite = skinSprite;
+                    m_HomeCenterBallImage.color = Color.white;
+                    if (m_HomeCenterBallShowcase != null) m_HomeCenterBallShowcase.SetActive(true);
+                }
+                else
+                {
+                    // In Classic mode, let the native 5-point rainbow star of Concept 3 shine through cleanly
+                    m_HomeCenterBallImage.color = new Color(1f, 1f, 1f, 0f);
+                }
             }
         }
 
@@ -3686,41 +4462,82 @@ namespace BoxBlast
 
         private void BuildClassicGameOverModal()
         {
-            m_GameOverPanel = new GameObject("GameOverPanel");
+            m_GameOverPanel = new GameObject("GameOverPanel", typeof(RectTransform));
             m_GameOverPanel.transform.SetParent(m_RootCanvas, false);
-            RectTransform panelRt = m_GameOverPanel.AddComponent<RectTransform>();
+            RectTransform panelRt = m_GameOverPanel.GetComponent<RectTransform>();
             panelRt.anchorMin = Vector2.zero; panelRt.anchorMax = Vector2.one; panelRt.sizeDelta = Vector2.zero;
+            panelRt.offsetMin = Vector2.zero; panelRt.offsetMax = Vector2.zero;
 
+            // Fullscreen backdrop matching background deep space navy (blocks raycasts to board)
             Image panelImg = m_GameOverPanel.AddComponent<Image>();
-            panelImg.color = new Color(0.04f, 0.06f, 0.12f, 0.95f);
+            panelImg.color = new Color(0.04f, 0.07f, 0.16f, 0.98f);
+            panelImg.raycastTarget = true;
 
-            GameObject winObj = new GameObject("GameOverDialog");
-            winObj.transform.SetParent(m_GameOverPanel.transform, false);
-            RectTransform winRt = winObj.AddComponent<RectTransform>();
-            winRt.sizeDelta = new Vector2(680, 680);
-            Image winBg = winObj.AddComponent<Image>();
-            winBg.sprite = SpriteFactory.GetPanelSprite(new Color(0.08f, 0.14f, 0.28f, 0.98f), new Color(0.65f, 0.25f, 0.25f, 1f), 2.5f, 20);
-            winBg.type = Image.Type.Sliced;
+            // Centered 3D Royal Baroque Scene Viewport Card: 768 x 1376 native aspect ratio (exactly like SettingsSceneCard)
+            GameObject sceneObj = new GameObject("GameOverSceneCard", typeof(RectTransform));
+            sceneObj.transform.SetParent(m_GameOverPanel.transform, false);
+            RectTransform sceneRt = sceneObj.GetComponent<RectTransform>();
+            sceneRt.anchorMin = new Vector2(0.5f, 0.5f);
+            sceneRt.anchorMax = new Vector2(0.5f, 0.5f);
+            sceneRt.pivot = new Vector2(0.5f, 0.5f);
+            sceneRt.anchoredPosition = Vector2.zero;
+            sceneRt.sizeDelta = new Vector2(768f, 1376f);
 
-            GameObject titleObj = CreateText(winObj.transform, new Vector2(0, 255), new Vector2(600, 70), "GAME OVER", 58, FontStyle.Bold, new Color(0.96f, 0.35f, 0.35f), TextAnchor.MiddleCenter);
+            // 1. High-Definition 3D Royal Baroque GameOver Render Artwork
+            Image sceneImg = sceneObj.AddComponent<Image>();
+            sceneImg.sprite = SpriteFactory.LoadOrFallbackSprite("GameOverBackground_Concept1");
+            sceneImg.color = Color.white;
+            sceneImg.raycastTarget = true;
 
-            // New Best Score banner
-            m_GameOverNewBestObj = CreateText(winObj.transform, new Vector2(0, 200), new Vector2(500, 36), "NEW RECORD!", 24, FontStyle.Bold, new Color(1.0f, 0.84f, 0.22f), TextAnchor.MiddleCenter);
+            // 2. Score Plaque Overlays (Centered on royal blue glass card)
+            // Final Score Header Label (Sky Cyan) - Large, sharp, clear
+            GameObject scoreLabel = CreateText(sceneObj.transform, new Vector2(0f, 192f), new Vector2(400f, 48f), "FINAL SCORE", 34, FontStyle.Normal, new Color(0.65f, 0.92f, 1.0f), TextAnchor.MiddleCenter, m_CandyFont);
+            MakeTextCrisp(scoreLabel.GetComponent<Text>(), new Color(0.02f, 0.08f, 0.28f, 0.95f), 2.0f);
+
+            // Huge Sparkling Score Digits (Razor sharp native resolution)
+            GameObject scoreVal = CreateText(sceneObj.transform, new Vector2(0f, 122f), new Vector2(460f, 110f), "0", 96, FontStyle.Normal, new Color(1.0f, 0.95f, 0.72f), TextAnchor.MiddleCenter, m_CandyFont);
+            m_GameOverScoreText = scoreVal.GetComponent<Text>();
+            MakeTextCrisp(m_GameOverScoreText, new Color(0.04f, 0.08f, 0.26f, 0.98f), 3.0f);
+
+            // Best Score Pill Row (with Golden Trophy)
+            GameObject bestPillObj = new GameObject("BestScoreRow");
+            bestPillObj.transform.SetParent(sceneObj.transform, false);
+            RectTransform bpRt = bestPillObj.AddComponent<RectTransform>();
+            bpRt.anchoredPosition = new Vector2(0f, 48f);
+            bpRt.sizeDelta = new Vector2(360f, 48f);
+
+            // Trophy Icon
+            GameObject trophyObj = new GameObject("TrophyIcon");
+            trophyObj.transform.SetParent(bestPillObj.transform, false);
+            RectTransform trRt = trophyObj.AddComponent<RectTransform>();
+            trRt.anchoredPosition = new Vector2(-110f, 0f);
+            trRt.sizeDelta = new Vector2(42f, 42f);
+            Image trImg = trophyObj.AddComponent<Image>();
+            trImg.sprite = GemIconFactory.GetTrophySprite();
+            trImg.raycastTarget = false;
+
+            // Best Score Text
+            GameObject bestVal = CreateText(bestPillObj.transform, new Vector2(16f, 0f), new Vector2(260f, 46f), "BEST: 0", 32, FontStyle.Normal, new Color(1.0f, 0.88f, 0.25f), TextAnchor.MiddleCenter, m_CandyFont);
+            m_GameOverBestText = bestVal.GetComponent<Text>();
+            MakeTextCrisp(m_GameOverBestText, new Color(0.28f, 0.14f, 0.02f, 0.95f), 2.0f);
+
+            // Glowing New Record Badge (Appears right above score card when highscore broken)
+            m_GameOverNewBestObj = new GameObject("NewRecordBadge");
+            m_GameOverNewBestObj.transform.SetParent(sceneObj.transform, false);
+            RectTransform nrbRt = m_GameOverNewBestObj.AddComponent<RectTransform>();
+            nrbRt.anchoredPosition = new Vector2(0f, 248f);
+            nrbRt.sizeDelta = new Vector2(340f, 42f);
+            Image nrbImg = m_GameOverNewBestObj.AddComponent<Image>();
+            nrbImg.sprite = SpriteFactory.Get3DPillBadgeSprite(new Color(1f, 0.82f, 0.18f), new Color(0.65f, 0.38f, 0.02f));
+            nrbImg.type = Image.Type.Sliced;
+            nrbImg.raycastTarget = false;
+
+            GameObject nrbTxt = CreateText(m_GameOverNewBestObj.transform, Vector2.zero, new Vector2(320f, 36f), "★ NEW BEST RECORD! ★", 24, FontStyle.Normal, Color.white, TextAnchor.MiddleCenter, m_CandyFont);
+            MakeTextCrisp(nrbTxt.GetComponent<Text>(), new Color(0.42f, 0.22f, 0.02f, 0.98f), 2.0f);
             m_GameOverNewBestObj.SetActive(false);
 
-            // Final Score
-            GameObject scoreLabel = CreateText(winObj.transform, new Vector2(0, 145), new Vector2(400, 32), "FINAL SCORE", 20, FontStyle.Bold, new Color(0.70f, 0.82f, 1f), TextAnchor.MiddleCenter);
-            GameObject scoreVal = CreateText(winObj.transform, new Vector2(0, 90), new Vector2(500, 75), "0", 64, FontStyle.Bold, Color.white, TextAnchor.MiddleCenter);
-            m_GameOverScoreText = scoreVal.GetComponent<Text>();
-
-            // Best Score
-            GameObject bestVal = CreateText(winObj.transform, new Vector2(0, 25), new Vector2(500, 40), "BEST: 0", 26, FontStyle.Bold, new Color(1.0f, 0.82f, 0.15f), TextAnchor.MiddleCenter);
-            m_GameOverBestText = bestVal.GetComponent<Text>();
-
-            // Sparkling Gold Revive Button (Free with limited chances)
-            m_GameOverReviveBtn = CreateButton(winObj.transform, new Vector2(0, -45), new Vector2(450, 72), new Color(0.92f, 0.65f, 0.12f), "REVIVE (3 CHANCES LEFT)", 28);
-            m_GameOverReviveText = m_GameOverReviveBtn.GetComponentInChildren<Text>();
-            m_GameOverReviveBtn.GetComponent<Button>().onClick.AddListener(() =>
+            // 3. Button 1: REVIVE (Golden 3D Pill Button placed at Y: -112)
+            m_GameOverReviveBtn = CreateTransparentButton(sceneObj.transform, new Vector2(0f, -112f), new Vector2(430f, 90f), () =>
             {
                 if (GameManager.Instance != null)
                 {
@@ -3734,23 +4551,61 @@ namespace BoxBlast
                         FloatingText.Create(Vector3.zero, "No Revives Left!", new Color(1f, 0.35f, 0.35f), 6f);
                     }
                 }
-            });
+            }, "Btn_Revive");
 
-            // Big Emerald Green "PLAY AGAIN" Button
-            m_GameOverRestartBtn = CreateButton(winObj.transform, new Vector2(0, -128), new Vector2(450, 68), new Color(0.12f, 0.72f, 0.35f), "PLAY AGAIN", 30);
-            m_GameOverRestartBtn.GetComponent<Button>().onClick.AddListener(() =>
+            // Revive Icon (Sparkle Jewel)
+            GameObject rIconObj = new GameObject("ReviveIcon");
+            rIconObj.transform.SetParent(m_GameOverReviveBtn.transform, false);
+            RectTransform rIconRt = rIconObj.AddComponent<RectTransform>();
+            rIconRt.anchoredPosition = new Vector2(-155f, 2f);
+            rIconRt.sizeDelta = new Vector2(40f, 40f);
+            Image rIconImg = rIconObj.AddComponent<Image>();
+            rIconImg.sprite = GemIconFactory.GetSparkleIcon3D();
+            rIconImg.raycastTarget = false;
+
+            GameObject rTxtObj = CreateText(m_GameOverReviveBtn.transform, new Vector2(18f, 2f), new Vector2(350f, 54f), "REVIVE (3 CHANCES LEFT)", 32, FontStyle.Normal, Color.white, TextAnchor.MiddleCenter, m_CandyFont);
+            m_GameOverReviveText = rTxtObj.GetComponent<Text>();
+            MakeTextCrisp(m_GameOverReviveText, new Color(0.38f, 0.18f, 0.02f, 0.95f), 2.5f);
+
+            // 4. Button 2: PLAY AGAIN (Emerald Green 3D Pill Button at Y: -224)
+            m_GameOverRestartBtn = CreateTransparentButton(sceneObj.transform, new Vector2(0f, -224f), new Vector2(430f, 90f), () =>
             {
                 m_GameOverPanel.SetActive(false);
                 if (GameManager.Instance != null) GameManager.Instance.RestartGame();
-            });
+            }, "Btn_Restart");
 
-            // Home Button
-            m_GameOverHomeBtn = CreateIconButtonWithText(winObj.transform, new Vector2(0, -206), new Vector2(450, 62), new Color(0.18f, 0.42f, 0.82f), GemIconFactory.GetHomeSprite(), "HOME", 26);
-            m_GameOverHomeBtn.GetComponent<Button>().onClick.AddListener(() =>
+            // Play Again Icon (Restart curved arrow)
+            GameObject pIconObj = new GameObject("RestartIcon");
+            pIconObj.transform.SetParent(m_GameOverRestartBtn.transform, false);
+            RectTransform pIconRt = pIconObj.AddComponent<RectTransform>();
+            pIconRt.anchoredPosition = new Vector2(-135f, 2f);
+            pIconRt.sizeDelta = new Vector2(40f, 40f);
+            Image pIconImg = pIconObj.AddComponent<Image>();
+            pIconImg.sprite = GemIconFactory.GetRestartArrowSprite();
+            pIconImg.raycastTarget = false;
+
+            GameObject pTxtObj = CreateText(m_GameOverRestartBtn.transform, new Vector2(18f, 2f), new Vector2(330f, 54f), "PLAY AGAIN", 38, FontStyle.Normal, Color.white, TextAnchor.MiddleCenter, m_CandyFont);
+            MakeTextCrisp(pTxtObj.GetComponent<Text>(), new Color(0.02f, 0.24f, 0.08f, 0.95f), 2.5f);
+
+            // 5. Button 3: HOME (Sapphire Blue 3D Pill Button at Y: -340)
+            m_GameOverHomeBtn = CreateTransparentButton(sceneObj.transform, new Vector2(0f, -340f), new Vector2(430f, 90f), () =>
             {
                 m_GameOverPanel.SetActive(false);
                 OpenModeSelect();
-            });
+            }, "Btn_Home");
+
+            // Home Icon
+            GameObject hIconObj = new GameObject("HomeIcon");
+            hIconObj.transform.SetParent(m_GameOverHomeBtn.transform, false);
+            RectTransform hIconRt = hIconObj.AddComponent<RectTransform>();
+            hIconRt.anchoredPosition = new Vector2(-110f, 2f);
+            hIconRt.sizeDelta = new Vector2(40f, 40f);
+            Image hIconImg = hIconObj.AddComponent<Image>();
+            hIconImg.sprite = GemIconFactory.GetHomeSprite();
+            hIconImg.raycastTarget = false;
+
+            GameObject hTxtObj = CreateText(m_GameOverHomeBtn.transform, new Vector2(18f, 2f), new Vector2(280f, 54f), "HOME", 40, FontStyle.Normal, Color.white, TextAnchor.MiddleCenter, m_CandyFont);
+            MakeTextCrisp(hTxtObj.GetComponent<Text>(), new Color(0.03f, 0.14f, 0.38f, 0.95f), 2.5f);
 
             m_GameOverPanel.SetActive(false);
         }
@@ -3804,20 +4659,20 @@ namespace BoxBlast
                 txt.fontStyle = FontStyle.Normal;
             }
 
-            // Remove existing duplicate shadow components to avoid muddy stacking
-            Shadow existingShadow = txt.gameObject.GetComponent<Shadow>();
-            if (existingShadow != null && !(existingShadow is Outline))
+            // Remove any multi-pass Outline component that creates blurry vertex ghosting around mobile text
+            Outline existingOutline = txt.gameObject.GetComponent<Outline>();
+            if (existingOutline != null)
             {
-                DestroyImmediate(existingShadow);
+                DestroyImmediate(existingOutline);
             }
 
-            // A tight, clean 1.0px outline gives razor-sharp definition without choking glyph holes
-            Outline outline = txt.gameObject.GetComponent<Outline>();
-            if (outline == null) outline = txt.gameObject.AddComponent<Outline>();
-            outline.effectColor = outlineOrShadowColor;
-            float d = Mathf.Clamp(distance, 0.75f, 1.0f);
-            outline.effectDistance = new Vector2(d, -d);
-            outline.useGraphicAlpha = true;
+            // Crisp directional 3D drop shadow directly beneath characters without choking interior letter counters
+            Shadow shadow = txt.gameObject.GetComponent<Shadow>();
+            if (shadow == null) shadow = txt.gameObject.AddComponent<Shadow>();
+            shadow.effectColor = new Color(outlineOrShadowColor.r, outlineOrShadowColor.g, outlineOrShadowColor.b, 0.90f);
+            float d = Mathf.Clamp(distance, 1.2f, 3.0f);
+            shadow.effectDistance = new Vector2(0f, -d);
+            shadow.useGraphicAlpha = true;
         }
 
         private GameObject CreateButton(Transform parent, Vector2 anchoredPos, Vector2 size, Color bgColor, string label, int fontSize)
@@ -3926,6 +4781,714 @@ namespace BoxBlast
             targetRt.localScale = baseScale;
             onComplete?.Invoke();
         }
+
+        private System.Collections.IEnumerator AnimateButtonFlash(Image flashImg, System.Action onComplete)
+        {
+            if (flashImg == null)
+            {
+                onComplete?.Invoke();
+                yield break;
+            }
+
+            Color baseColor = flashImg.color;
+            float targetAlpha = 0.38f;
+            float duration = 0.18f;
+            float elapsed = 0f;
+
+            // Fast burst highlight in
+            while (elapsed < duration * 0.4f)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                float a = Mathf.Lerp(0f, targetAlpha, elapsed / (duration * 0.4f));
+                flashImg.color = new Color(baseColor.r, baseColor.g, baseColor.b, a);
+                yield return null;
+            }
+
+            // Smooth ease-out fade
+            elapsed = 0f;
+            while (elapsed < duration * 0.6f)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                float a = Mathf.Lerp(targetAlpha, 0f, elapsed / (duration * 0.6f));
+                flashImg.color = new Color(baseColor.r, baseColor.g, baseColor.b, a);
+                yield return null;
+            }
+
+            flashImg.color = new Color(baseColor.r, baseColor.g, baseColor.b, 0f);
+            onComplete?.Invoke();
+        }
+
+        private System.Collections.IEnumerator AnimateCrownSparkle(RectTransform starRt)
+        {
+            if (starRt == null) yield break;
+            Vector3 origScale = starRt.localScale;
+            float elapsed = 0f;
+            float dur = 0.32f;
+            while (elapsed < dur)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                float p = elapsed / dur;
+                float s = 1f + 0.9f * Mathf.Sin(p * Mathf.PI);
+                starRt.localScale = origScale * s;
+                starRt.localRotation = Quaternion.Euler(0, 0, p * 360f);
+                yield return null;
+            }
+            starRt.localScale = origScale;
+        }
+
+        // ==========================================
+        // 👆 FIRST-TIME TUTORIAL HAND GUIDE (FTUE)
+        // ==========================================
+        private void BuildTutorialOverlay()
+        {
+            if (m_TutorialOverlayObj != null) return;
+
+            m_TutorialOverlayObj = new GameObject("TutorialOverlay", typeof(RectTransform));
+            m_TutorialOverlayObj.transform.SetParent(m_RootCanvas, false);
+            RectTransform rt = m_TutorialOverlayObj.GetComponent<RectTransform>();
+            rt.anchorMin = Vector2.zero; rt.anchorMax = Vector2.one; rt.sizeDelta = Vector2.zero;
+
+            // Translucent dark vignette (raycastTarget = false so piece dragging is NEVER blocked!)
+            Image bg = m_TutorialOverlayObj.AddComponent<Image>();
+            bg.color = new Color(0.02f, 0.04f, 0.12f, 0.40f);
+            bg.raycastTarget = false;
+
+            // Guidance Banner
+            GameObject bannerObj = new GameObject("TutorialBanner");
+            bannerObj.transform.SetParent(m_TutorialOverlayObj.transform, false);
+            RectTransform bRt = bannerObj.AddComponent<RectTransform>();
+            bRt.anchorMin = new Vector2(0.5f, 0.5f);
+            bRt.anchorMax = new Vector2(0.5f, 0.5f);
+            bRt.pivot = new Vector2(0.5f, 0.5f);
+            bRt.anchoredPosition = new Vector2(0f, 130f);
+            bRt.sizeDelta = new Vector2(580f, 74f);
+
+            Image bImg = bannerObj.AddComponent<Image>();
+            bImg.sprite = SpriteFactory.Get3DPillBadgeSprite(new Color(0.12f, 0.45f, 0.95f), new Color(0.04f, 0.18f, 0.45f));
+            bImg.type = Image.Type.Sliced;
+            bImg.raycastTarget = false;
+
+            Font font = (m_CandyFont != null) ? m_CandyFont : m_DefaultFont;
+            GameObject txtObj = CreateText(bannerObj.transform, Vector2.zero, new Vector2(550f, 60f), "👆 DRAG SHAPE TO BLAST LINES!", 25, FontStyle.Normal, Color.white, TextAnchor.MiddleCenter, font);
+            MakeTextCrisp(txtObj.GetComponent<Text>(), new Color(0.02f, 0.08f, 0.25f, 0.95f), 1.0f);
+
+            // Animated Pointing Hand Icon
+            GameObject handObj = new GameObject("TutorialHand");
+            handObj.transform.SetParent(m_TutorialOverlayObj.transform, false);
+            m_TutorialHandRt = handObj.AddComponent<RectTransform>();
+            m_TutorialHandRt.sizeDelta = new Vector2(96f, 96f);
+            m_TutorialHandRt.pivot = new Vector2(0.38f, 0.88f);
+            Image hImg = handObj.AddComponent<Image>();
+            hImg.sprite = GemIconFactory.GetTutorialHandSprite();
+            hImg.raycastTarget = false;
+
+            m_TutorialOverlayObj.SetActive(false);
+        }
+
+        public void ShowTutorialGuide()
+        {
+            if (PlayerPrefs.GetInt("BoxBlast_Tutorial_Completed", 0) == 1) return;
+
+            if (m_TutorialOverlayObj == null) BuildTutorialOverlay();
+            if (m_TutorialOverlayObj == null) return;
+
+            m_IsTutorialActive = true;
+            m_TutorialOverlayObj.SetActive(true);
+            m_TutorialOverlayObj.transform.SetAsLastSibling();
+
+            if (m_TutorialAnimCoroutine != null) StopCoroutine(m_TutorialAnimCoroutine);
+            m_TutorialAnimCoroutine = StartCoroutine(AnimateTutorialGuideLoop());
+
+            if (SoundManager.Instance != null) SoundManager.Instance.PlayTutorialPrompt();
+        }
+
+        public void OnPlayerStartedDrag()
+        {
+            if (m_IsTutorialActive)
+            {
+                HideTutorialGuide(false);
+            }
+        }
+
+        public void HideTutorialGuide(bool completed)
+        {
+            if (!m_IsTutorialActive && (m_TutorialOverlayObj == null || !m_TutorialOverlayObj.activeSelf)) return;
+            m_IsTutorialActive = false;
+
+            if (m_TutorialAnimCoroutine != null)
+            {
+                StopCoroutine(m_TutorialAnimCoroutine);
+                m_TutorialAnimCoroutine = null;
+            }
+
+            if (m_TutorialOverlayObj != null)
+            {
+                m_TutorialOverlayObj.SetActive(false);
+            }
+
+            if (completed)
+            {
+                PlayerPrefs.SetInt("BoxBlast_Tutorial_Completed", 1);
+                PlayerPrefs.Save();
+                FloatingText.CreateBadge(Vector3.up * 0.5f, "🌟 GREAT JOB! LINE BLASTED!", Color.white, new Color(0.12f, 0.65f, 0.35f));
+            }
+        }
+
+        private System.Collections.IEnumerator AnimateTutorialGuideLoop()
+        {
+            while (m_IsTutorialActive && m_TutorialHandRt != null)
+            {
+                Vector3 startWorld = (ShapeSpawner.Instance != null) ? ShapeSpawner.Instance.transform.position : new Vector3(0f, -4.3f, 0f);
+                Vector3 targetWorld = (GridManager.Instance != null) ? (Vector3)GridManager.Instance.GridCenter : new Vector3(0f, 0.4f, 0f);
+
+                Camera cam = Camera.main;
+                Vector2 startScreen = (cam != null) ? (Vector2)cam.WorldToScreenPoint(startWorld + new Vector3(0.2f, -0.2f, 0f)) : new Vector2(Screen.width * 0.5f, Screen.height * 0.22f);
+                Vector2 targetScreen = (cam != null) ? (Vector2)cam.WorldToScreenPoint(targetWorld) : new Vector2(Screen.width * 0.5f, Screen.height * 0.55f);
+
+                RectTransformUtility.ScreenPointToLocalPointInRectangle(m_RootCanvas as RectTransform, startScreen, null, out Vector2 startLocal);
+                RectTransformUtility.ScreenPointToLocalPointInRectangle(m_RootCanvas as RectTransform, targetScreen, null, out Vector2 targetLocal);
+
+                m_TutorialHandRt.anchoredPosition = startLocal;
+                m_TutorialHandRt.localScale = Vector3.zero;
+
+                float popElapsed = 0f;
+                while (popElapsed < 0.22f)
+                {
+                    popElapsed += Time.unscaledDeltaTime;
+                    float s = Mathf.Lerp(0f, 1.15f, popElapsed / 0.22f);
+                    m_TutorialHandRt.localScale = Vector3.one * s;
+                    yield return null;
+                }
+                m_TutorialHandRt.localScale = Vector3.one;
+                yield return new WaitForSecondsRealtime(0.15f);
+
+                float glideElapsed = 0f;
+                float glideDuration = 1.1f;
+                while (glideElapsed < glideDuration)
+                {
+                    glideElapsed += Time.unscaledDeltaTime;
+                    float t = Mathf.SmoothStep(0f, 1f, glideElapsed / glideDuration);
+                    Vector2 curPos = Vector2.Lerp(startLocal, targetLocal, t);
+                    curPos.x += Mathf.Sin(t * Mathf.PI) * 25f;
+                    m_TutorialHandRt.anchoredPosition = curPos;
+                    yield return null;
+                }
+
+                yield return new WaitForSecondsRealtime(0.35f);
+                float fadeElapsed = 0f;
+                while (fadeElapsed < 0.25f)
+                {
+                    fadeElapsed += Time.unscaledDeltaTime;
+                    float s = Mathf.Lerp(1.0f, 0f, fadeElapsed / 0.25f);
+                    m_TutorialHandRt.localScale = Vector3.one * s;
+                    yield return null;
+                }
+                yield return new WaitForSecondsRealtime(0.20f);
+            }
+        }
+
+        // ==========================================
+        // ⚡ DYNAMIC JUICY COMBO CALLOUTS
+        // ==========================================
+        private void BuildComboCalloutUI()
+        {
+            if (m_ComboCalloutObj != null) return;
+
+            m_ComboCalloutObj = new GameObject("ComboCalloutBanner", typeof(RectTransform));
+            m_ComboCalloutObj.transform.SetParent(m_RootCanvas, false);
+            m_ComboCalloutRt = m_ComboCalloutObj.GetComponent<RectTransform>();
+            m_ComboCalloutRt.anchorMin = new Vector2(0.5f, 0.5f);
+            m_ComboCalloutRt.anchorMax = new Vector2(0.5f, 0.5f);
+            m_ComboCalloutRt.pivot = new Vector2(0.5f, 0.5f);
+            m_ComboCalloutRt.sizeDelta = new Vector2(460f, 95f);
+
+            m_ComboCalloutBg = m_ComboCalloutObj.AddComponent<Image>();
+            m_ComboCalloutBg.sprite = SpriteFactory.Get3DPillBadgeSprite(new Color(1f, 0.82f, 0.18f), new Color(0.65f, 0.38f, 0.02f));
+            m_ComboCalloutBg.type = Image.Type.Sliced;
+            m_ComboCalloutBg.raycastTarget = false;
+
+            Font font = (m_CandyFont != null) ? m_CandyFont : m_DefaultFont;
+            GameObject txtObj = CreateText(m_ComboCalloutObj.transform, Vector2.zero, new Vector2(440f, 85f), "GREAT!", 48, FontStyle.Normal, Color.white, TextAnchor.MiddleCenter, font);
+            m_ComboCalloutText = txtObj.GetComponent<Text>();
+            MakeTextCrisp(m_ComboCalloutText, new Color(0.18f, 0.08f, 0.02f, 0.98f), 1.2f);
+
+            m_ComboCalloutObj.SetActive(false);
+        }
+
+        public void ShowComboCallout(int combo, int linesCleared, Vector3 worldPos)
+        {
+            if (combo < 2 && linesCleared < 2) return;
+
+            if (m_ComboCalloutObj == null) BuildComboCalloutUI();
+            if (m_ComboCalloutObj == null) return;
+
+            if (m_ComboCalloutCoroutine != null) StopCoroutine(m_ComboCalloutCoroutine);
+            m_ComboCalloutCoroutine = StartCoroutine(AnimateComboCallout(combo, linesCleared, worldPos));
+        }
+
+        private System.Collections.IEnumerator AnimateComboCallout(int combo, int linesCleared, Vector3 worldPos)
+        {
+            string callout = "GREAT!";
+            Color pillTop = new Color(1f, 0.85f, 0.20f);
+            Color pillBot = new Color(0.68f, 0.38f, 0.04f);
+
+            if (linesCleared >= 4)
+            {
+                callout = "★ MEGA BLAST! ★";
+                pillTop = new Color(1f, 0.40f, 0.15f);
+                pillBot = new Color(0.55f, 0.12f, 0.04f);
+            }
+            else if (linesCleared == 3)
+            {
+                callout = "★ TRIPLE BLAST! ★";
+                pillTop = new Color(0.20f, 0.85f, 1.0f);
+                pillBot = new Color(0.04f, 0.35f, 0.58f);
+            }
+            else if (linesCleared == 2 && combo < 3)
+            {
+                callout = "DOUBLE BLAST!";
+                pillTop = new Color(1.0f, 0.78f, 0.18f);
+                pillBot = new Color(0.60f, 0.32f, 0.02f);
+            }
+            else if (combo >= 5)
+            {
+                callout = "★ UNBELIEVABLE! ★";
+                pillTop = new Color(1f, 0.22f, 0.55f);
+                pillBot = new Color(0.55f, 0.04f, 0.25f);
+            }
+            else if (combo == 4)
+            {
+                callout = "★ AWESOME! ★";
+                pillTop = new Color(0.85f, 0.25f, 1.0f);
+                pillBot = new Color(0.45f, 0.08f, 0.60f);
+            }
+            else if (combo == 3)
+            {
+                callout = "★ AMAZING! ★";
+                pillTop = new Color(1.0f, 0.55f, 0.12f);
+                pillBot = new Color(0.65f, 0.22f, 0.02f);
+            }
+
+            if (m_ComboCalloutText != null) m_ComboCalloutText.text = callout;
+            if (m_ComboCalloutBg != null)
+            {
+                m_ComboCalloutBg.sprite = SpriteFactory.Get3DPillBadgeSprite(pillTop, pillBot);
+            }
+
+            Camera cam = Camera.main;
+            Vector2 screenPos = (cam != null) ? (Vector2)cam.WorldToScreenPoint(worldPos + Vector3.up * 0.8f) : new Vector2(Screen.width * 0.5f, Screen.height * 0.58f);
+            RectTransformUtility.ScreenPointToLocalPointInRectangle(m_RootCanvas as RectTransform, screenPos, null, out Vector2 localPos);
+
+            m_ComboCalloutRt.anchoredPosition = localPos;
+            m_ComboCalloutRt.localScale = Vector3.zero;
+            m_ComboCalloutObj.SetActive(true);
+            m_ComboCalloutObj.transform.SetAsLastSibling();
+
+            if (ParticleFXManager.Instance != null)
+            {
+                ParticleFXManager.Instance.PlayZoneClearShockwave(worldPos);
+                ParticleFXManager.Instance.PlayComboCelebration(worldPos, combo);
+            }
+
+            if (combo >= 3 && SoundManager.Instance != null)
+            {
+                SoundManager.Instance.PlayComboFanfare(combo);
+            }
+
+            float popElapsed = 0f;
+            float popDur = 0.26f;
+            while (popElapsed < popDur)
+            {
+                popElapsed += Time.unscaledDeltaTime;
+                float progress = popElapsed / popDur;
+                float scale = (progress < 0.65f) ? Mathf.Lerp(0f, 1.32f, progress / 0.65f) : Mathf.Lerp(1.32f, 1.0f, (progress - 0.65f) / 0.35f);
+                m_ComboCalloutRt.localScale = Vector3.one * scale;
+                yield return null;
+            }
+            m_ComboCalloutRt.localScale = Vector3.one;
+
+            float holdElapsed = 0f;
+            float holdDur = 0.65f;
+            Vector2 startPos = m_ComboCalloutRt.anchoredPosition;
+            while (holdElapsed < holdDur)
+            {
+                holdElapsed += Time.unscaledDeltaTime;
+                m_ComboCalloutRt.anchoredPosition = startPos + new Vector2(0f, holdElapsed * 60f);
+                yield return null;
+            }
+
+            float outElapsed = 0f;
+            float outDur = 0.18f;
+            while (outElapsed < outDur)
+            {
+                outElapsed += Time.unscaledDeltaTime;
+                float s = Mathf.Lerp(1.0f, 0f, outElapsed / outDur);
+                m_ComboCalloutRt.localScale = Vector3.one * s;
+                yield return null;
+            }
+
+            m_ComboCalloutObj.SetActive(false);
+        }
+
+        // ==========================================
+        // 🏆 ACHIEVEMENTS & QUEST BADGES SYSTEM UI
+        // ==========================================
+        private void BuildAchievementToastUI()
+        {
+            if (m_AchievementToastObj != null) return;
+
+            m_AchievementToastObj = new GameObject("AchievementToast", typeof(RectTransform));
+            m_AchievementToastObj.transform.SetParent(m_RootCanvas, false);
+            m_AchievementToastRt = m_AchievementToastObj.GetComponent<RectTransform>();
+            m_AchievementToastRt.anchorMin = new Vector2(0.5f, 1f);
+            m_AchievementToastRt.anchorMax = new Vector2(0.5f, 1f);
+            m_AchievementToastRt.pivot = new Vector2(0.5f, 1f);
+            m_AchievementToastRt.anchoredPosition = new Vector2(0f, 140f);
+            m_AchievementToastRt.sizeDelta = new Vector2(560f, 96f);
+
+            Image bg = m_AchievementToastObj.AddComponent<Image>();
+            bg.sprite = SpriteFactory.Get3DPillBadgeSprite(new Color(0.12f, 0.45f, 0.95f), new Color(0.04f, 0.18f, 0.45f));
+            bg.type = Image.Type.Sliced;
+            bg.raycastTarget = false;
+
+            GameObject trophyObj = new GameObject("TrophyIcon");
+            trophyObj.transform.SetParent(m_AchievementToastObj.transform, false);
+            RectTransform trRt = trophyObj.AddComponent<RectTransform>();
+            trRt.anchoredPosition = new Vector2(-220f, 0f);
+            trRt.sizeDelta = new Vector2(54f, 54f);
+            Image trImg = trophyObj.AddComponent<Image>();
+            trImg.sprite = GemIconFactory.GetTrophySprite();
+            trImg.raycastTarget = false;
+
+            Font font = (m_CandyFont != null) ? m_CandyFont : m_DefaultFont;
+
+            GameObject headObj = CreateText(m_AchievementToastObj.transform, new Vector2(30f, 20f), new Vector2(420f, 30f), "🏆 ACHIEVEMENT UNLOCKED!", 19, FontStyle.Normal, new Color(1.0f, 0.88f, 0.25f), TextAnchor.MiddleLeft, font);
+            m_AchievementToastTitle = headObj.GetComponent<Text>();
+            MakeTextCrisp(m_AchievementToastTitle, new Color(0.35f, 0.18f, 0.02f, 0.95f), 1.0f);
+
+            GameObject descObj = CreateText(m_AchievementToastObj.transform, new Vector2(30f, -16f), new Vector2(420f, 32f), "First Line Blast (+50 Coins)", 21, FontStyle.Normal, Color.white, TextAnchor.MiddleLeft, font);
+            m_AchievementToastDesc = descObj.GetComponent<Text>();
+            MakeTextCrisp(m_AchievementToastDesc, new Color(0.02f, 0.08f, 0.22f, 0.95f), 1.0f);
+
+            m_AchievementToastObj.SetActive(false);
+        }
+
+        public void ShowAchievementToast(AchievementData ach)
+        {
+            if (ach == null) return;
+            if (m_AchievementToastObj == null) BuildAchievementToastUI();
+            if (m_AchievementToastObj == null) return;
+
+            if (m_AchievementToastCoroutine != null) StopCoroutine(m_AchievementToastCoroutine);
+            m_AchievementToastCoroutine = StartCoroutine(AnimateAchievementToast(ach));
+        }
+
+        private System.Collections.IEnumerator AnimateAchievementToast(AchievementData ach)
+        {
+            if (m_AchievementToastTitle != null) m_AchievementToastTitle.text = "🏆 ACHIEVEMENT UNLOCKED!";
+            if (m_AchievementToastDesc != null)
+            {
+                string rewardStr = (ach.CoinReward > 0) ? $"+{ach.CoinReward} Coins" : "";
+                if (ach.BoosterReward != BoosterType.None) rewardStr += (rewardStr.Length > 0 ? $" & 1 {ach.BoosterReward}" : $"1 {ach.BoosterReward}");
+                m_AchievementToastDesc.text = $"{ach.Title} ({rewardStr})";
+            }
+
+            m_AchievementToastObj.SetActive(true);
+            m_AchievementToastObj.transform.SetAsLastSibling();
+
+            float elapsed = 0f;
+            float slideDur = 0.35f;
+            Vector2 offscreen = new Vector2(0f, 120f);
+            Vector2 onscreen = new Vector2(0f, -65f);
+
+            while (elapsed < slideDur)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                float t = Mathf.SmoothStep(0f, 1f, elapsed / slideDur);
+                m_AchievementToastRt.anchoredPosition = Vector2.Lerp(offscreen, onscreen, t);
+                yield return null;
+            }
+            m_AchievementToastRt.anchoredPosition = onscreen;
+
+            yield return new WaitForSecondsRealtime(2.8f);
+
+            elapsed = 0f;
+            while (elapsed < slideDur)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                float t = Mathf.SmoothStep(0f, 1f, elapsed / slideDur);
+                m_AchievementToastRt.anchoredPosition = Vector2.Lerp(onscreen, offscreen, t);
+                yield return null;
+            }
+            m_AchievementToastRt.anchoredPosition = offscreen;
+            m_AchievementToastObj.SetActive(false);
+        }
+
+        private void BuildAchievementsModal()
+        {
+            if (m_AchievementsModal != null) return;
+
+            m_AchievementsModal = new GameObject("AchievementsModal", typeof(RectTransform));
+            m_AchievementsModal.transform.SetParent(m_RootCanvas, false);
+            RectTransform rt = m_AchievementsModal.GetComponent<RectTransform>();
+            rt.anchorMin = Vector2.zero; rt.anchorMax = Vector2.one; rt.sizeDelta = Vector2.zero;
+            rt.offsetMin = Vector2.zero; rt.offsetMax = Vector2.zero;
+
+            Image bg = m_AchievementsModal.AddComponent<Image>();
+            bg.color = new Color(0.04f, 0.07f, 0.16f, 0.98f);
+            bg.raycastTarget = true;
+            Button bgBtn = m_AchievementsModal.AddComponent<Button>();
+            bgBtn.onClick.AddListener(CloseAchievementsModal);
+
+            GameObject sceneObj = new GameObject("AchievementsSceneCard", typeof(RectTransform));
+            sceneObj.transform.SetParent(m_AchievementsModal.transform, false);
+            RectTransform sceneRt = sceneObj.GetComponent<RectTransform>();
+            sceneRt.anchorMin = new Vector2(0.5f, 0.5f);
+            sceneRt.anchorMax = new Vector2(0.5f, 0.5f);
+            sceneRt.pivot = new Vector2(0.5f, 0.5f);
+            sceneRt.anchoredPosition = Vector2.zero;
+            sceneRt.sizeDelta = new Vector2(768, 1376);
+
+            Image sceneImg = sceneObj.AddComponent<Image>();
+            sceneImg.sprite = SpriteFactory.LoadOrFallbackSprite("WardrobeBackground_Concept1");
+            sceneImg.color = Color.white;
+            sceneImg.raycastTarget = true;
+
+            GameObject closeObj = new GameObject("AchievementsCloseBtn", typeof(RectTransform));
+            closeObj.transform.SetParent(sceneObj.transform, false);
+            RectTransform closeRt = closeObj.GetComponent<RectTransform>();
+            closeRt.anchoredPosition = new Vector2(275f, 408f);
+            closeRt.sizeDelta = new Vector2(96f, 96f);
+
+            Image closeImg = closeObj.AddComponent<Image>();
+            closeImg.color = Color.clear;
+            closeImg.raycastTarget = true;
+
+            Button closeBtn = closeObj.AddComponent<Button>();
+            closeBtn.onClick.AddListener(() =>
+            {
+                StartCoroutine(AnimateButtonPress(closeRt, CloseAchievementsModal));
+            });
+            closeObj.transform.SetAsLastSibling();
+
+            Font font = (m_CandyFont != null) ? m_CandyFont : m_DefaultFont;
+            GameObject titleObj = CreateText(sceneObj.transform, new Vector2(0f, 408f), new Vector2(460f, 65f), "🏆 ACHIEVEMENTS", 42, FontStyle.Normal, new Color(1.0f, 0.92f, 0.45f), TextAnchor.MiddleCenter, font);
+            MakeTextCrisp(titleObj.GetComponent<Text>(), new Color(0.35f, 0.18f, 0.02f, 0.98f), 1.2f);
+
+            GameObject subObj = CreateText(sceneObj.transform, new Vector2(0f, 345f), new Vector2(580f, 40f), "Complete challenges to claim free Coins & Boosters!", 22, FontStyle.Normal, new Color(0.85f, 0.92f, 1.0f), TextAnchor.MiddleCenter, font);
+            MakeTextCrisp(subObj.GetComponent<Text>(), new Color(0.04f, 0.12f, 0.32f, 0.98f), 1.0f);
+
+            GameObject scrollObj = new GameObject("AchievementsScrollView", typeof(RectTransform));
+            scrollObj.transform.SetParent(sceneObj.transform, false);
+            RectTransform sRt = scrollObj.GetComponent<RectTransform>();
+            sRt.anchoredPosition = new Vector2(0f, -45f);
+            sRt.sizeDelta = new Vector2(620f, 760f);
+
+            ScrollRect sr = scrollObj.AddComponent<ScrollRect>();
+            sr.horizontal = false;
+            sr.vertical = true;
+            sr.movementType = ScrollRect.MovementType.Elastic;
+
+            GameObject maskObj = new GameObject("Viewport", typeof(RectTransform));
+            maskObj.transform.SetParent(scrollObj.transform, false);
+            RectTransform mRt = maskObj.GetComponent<RectTransform>();
+            mRt.anchorMin = Vector2.zero; mRt.anchorMax = Vector2.one; mRt.sizeDelta = Vector2.zero;
+            Image maskImg = maskObj.AddComponent<Image>();
+            maskImg.color = Color.white;
+            Mask mask = maskObj.AddComponent<Mask>();
+            mask.showMaskGraphic = false;
+
+            GameObject contentObj = new GameObject("Content", typeof(RectTransform));
+            contentObj.transform.SetParent(maskObj.transform, false);
+            RectTransform cRt = contentObj.GetComponent<RectTransform>();
+            cRt.anchorMin = new Vector2(0.5f, 1f);
+            cRt.anchorMax = new Vector2(0.5f, 1f);
+            cRt.pivot = new Vector2(0.5f, 1f);
+            cRt.anchoredPosition = Vector2.zero;
+            cRt.sizeDelta = new Vector2(600f, 1200f);
+
+            VerticalLayoutGroup vlg = contentObj.AddComponent<VerticalLayoutGroup>();
+            vlg.spacing = 16f;
+            vlg.childAlignment = TextAnchor.UpperCenter;
+            vlg.childControlWidth = false;
+            vlg.childControlHeight = false;
+
+            ContentSizeFitter csf = contentObj.AddComponent<ContentSizeFitter>();
+            csf.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+            sr.viewport = mRt;
+            sr.content = cRt;
+            m_AchievementsListContainer = contentObj.transform;
+
+            m_AchievementsModal.SetActive(false);
+        }
+
+        public void OpenAchievementsModal()
+        {
+            if (m_AchievementsModal == null) BuildAchievementsModal();
+            RefreshAchievementsList();
+            if (m_AchievementsModal != null)
+            {
+                m_AchievementsModal.SetActive(true);
+                m_AchievementsModal.transform.SetAsLastSibling();
+
+                Transform scene = m_AchievementsModal.transform.Find("AchievementsSceneCard");
+                if (scene != null)
+                {
+                    float canvasHeight = 1920f;
+                    float canvasWidth = 1080f;
+                    if (m_RootCanvas != null)
+                    {
+                        RectTransform cRt = m_RootCanvas.GetComponent<RectTransform>();
+                        if (cRt != null && cRt.rect.height > 0) canvasHeight = cRt.rect.height;
+                        if (cRt != null && cRt.rect.width > 0) canvasWidth = cRt.rect.width;
+                    }
+                    float fitScale = canvasHeight / 1376f;
+                    if (768f * fitScale > canvasWidth) fitScale = canvasWidth / 768f;
+                    scene.localScale = new Vector3(fitScale, fitScale, 1f);
+                }
+            }
+        }
+
+        public void CloseAchievementsModal()
+        {
+            if (m_AchievementsModal != null)
+            {
+                m_AchievementsModal.SetActive(false);
+            }
+            RefreshModeCardStats();
+        }
+
+        private void RefreshAchievementsList()
+        {
+            if (m_AchievementsListContainer == null || AchievementManager.Instance == null) return;
+
+            for (int i = m_AchievementsListContainer.childCount - 1; i >= 0; i--)
+            {
+                Destroy(m_AchievementsListContainer.GetChild(i).gameObject);
+            }
+
+            var allAch = AchievementManager.Instance.AllAchievements;
+            Font font = (m_CandyFont != null) ? m_CandyFont : m_DefaultFont;
+
+            foreach (var ach in allAch)
+            {
+                GameObject cardObj = new GameObject($"Card_{ach.Id}", typeof(RectTransform));
+                cardObj.transform.SetParent(m_AchievementsListContainer, false);
+                RectTransform cRt = cardObj.GetComponent<RectTransform>();
+                cRt.sizeDelta = new Vector2(590f, 130f);
+
+                Image cardBg = cardObj.AddComponent<Image>();
+                Color bgColor = ach.IsClaimed
+                    ? new Color(0.04f, 0.08f, 0.18f, 0.75f)
+                    : (ach.IsUnlocked ? new Color(0.06f, 0.18f, 0.38f, 0.95f) : new Color(0.04f, 0.10f, 0.24f, 0.90f));
+                Color borderColor = ach.IsClaimed
+                    ? new Color(0.18f, 0.24f, 0.38f, 0.6f)
+                    : (ach.IsUnlocked ? new Color(1.0f, 0.85f, 0.25f, 1f) : new Color(0.20f, 0.45f, 0.80f, 0.75f));
+                cardBg.sprite = SpriteFactory.GetRoundedButtonSprite(bgColor, borderColor, 0.08f);
+
+                // Trophy Icon
+                GameObject trObj = new GameObject("Trophy");
+                trObj.transform.SetParent(cardObj.transform, false);
+                RectTransform tRt = trObj.AddComponent<RectTransform>();
+                tRt.anchoredPosition = new Vector2(-235f, 0f);
+                tRt.sizeDelta = new Vector2(64f, 64f);
+                Image tImg = trObj.AddComponent<Image>();
+                tImg.sprite = GemIconFactory.GetTrophySprite();
+                tImg.color = ach.IsClaimed ? new Color(0.6f, 0.65f, 0.75f, 0.6f) : (ach.IsUnlocked ? Color.white : new Color(0.6f, 0.75f, 0.9f, 0.75f));
+                tImg.raycastTarget = false;
+
+                // Title
+                Color titleCol = ach.IsClaimed ? new Color(0.7f, 0.75f, 0.85f) : (ach.IsUnlocked ? new Color(1f, 0.92f, 0.45f) : Color.white);
+                GameObject title = CreateText(cardObj.transform, new Vector2(-40f, 32f), new Vector2(300f, 32f), ach.Title, 22, FontStyle.Normal, titleCol, TextAnchor.MiddleLeft, font);
+                MakeTextCrisp(title.GetComponent<Text>(), new Color(0.02f, 0.06f, 0.18f, 0.95f), 1.0f);
+
+                // Description
+                GameObject desc = CreateText(cardObj.transform, new Vector2(-40f, 0f), new Vector2(300f, 28f), ach.Description, 17, FontStyle.Normal, new Color(0.75f, 0.85f, 1.0f), TextAnchor.MiddleLeft, font);
+                MakeTextCrisp(desc.GetComponent<Text>(), new Color(0.02f, 0.04f, 0.12f, 0.95f), 0.8f);
+
+                // Progress Bar
+                GameObject trackObj = new GameObject("ProgressBarTrack");
+                trackObj.transform.SetParent(cardObj.transform, false);
+                RectTransform trkRt = trackObj.AddComponent<RectTransform>();
+                trkRt.anchoredPosition = new Vector2(-40f, -34f);
+                trkRt.sizeDelta = new Vector2(290f, 18f);
+                Image trkImg = trackObj.AddComponent<Image>();
+                trkImg.sprite = SpriteFactory.GetPillSprite(new Color(0.02f, 0.05f, 0.12f, 0.9f));
+                trkImg.raycastTarget = false;
+
+                float progress = Mathf.Clamp01((float)ach.CurrentValue / Mathf.Max(1, ach.TargetValue));
+
+                GameObject fillObj = new GameObject("Fill");
+                fillObj.transform.SetParent(trackObj.transform, false);
+                RectTransform fRt = fillObj.AddComponent<RectTransform>();
+                fRt.anchorMin = new Vector2(0f, 0.5f);
+                fRt.anchorMax = new Vector2(0f, 0.5f);
+                fRt.pivot = new Vector2(0f, 0.5f);
+                fRt.anchoredPosition = new Vector2(2f, 0f);
+                fRt.sizeDelta = new Vector2(Mathf.Max(8f, (trkRt.sizeDelta.x - 4f) * progress), 14f);
+                Image fImg = fillObj.AddComponent<Image>();
+                fImg.sprite = SpriteFactory.GetPillSprite(ach.IsUnlocked ? new Color(0.20f, 0.90f, 0.40f) : new Color(0.20f, 0.70f, 0.95f));
+                fImg.raycastTarget = false;
+
+                string progStr = ach.IsUnlocked ? $"{ach.TargetValue} / {ach.TargetValue}" : $"{ach.CurrentValue} / {ach.TargetValue}";
+                GameObject progTxt = CreateText(trackObj.transform, Vector2.zero, new Vector2(290f, 18f), progStr, 13, FontStyle.Bold, Color.white, TextAnchor.MiddleCenter, font);
+                MakeTextCrisp(progTxt.GetComponent<Text>(), Color.black, 0.6f);
+
+                // Right Button: CLAIM / CLAIMED / LOCKED
+                GameObject btnObj = new GameObject("ActionBtn");
+                btnObj.transform.SetParent(cardObj.transform, false);
+                RectTransform bRt = btnObj.AddComponent<RectTransform>();
+                bRt.anchoredPosition = new Vector2(205f, 0f);
+                bRt.sizeDelta = new Vector2(145f, 54f);
+
+                string capturedId = ach.Id;
+                if (ach.IsClaimed)
+                {
+                    Image bImg = btnObj.AddComponent<Image>();
+                    bImg.sprite = SpriteFactory.Get3DPillBadgeSprite(new Color(0.25f, 0.32f, 0.45f), new Color(0.12f, 0.16f, 0.24f));
+                    bImg.type = Image.Type.Sliced;
+                    bImg.raycastTarget = false;
+
+                    GameObject bTxt = CreateText(btnObj.transform, Vector2.zero, new Vector2(140f, 40f), "CLAIMED ✓", 17, FontStyle.Normal, new Color(0.65f, 0.75f, 0.88f), TextAnchor.MiddleCenter, font);
+                    MakeTextCrisp(bTxt.GetComponent<Text>(), Color.black, 0.8f);
+                }
+                else if (ach.IsUnlocked)
+                {
+                    Image bImg = btnObj.AddComponent<Image>();
+                    bImg.sprite = SpriteFactory.Get3DPillBadgeSprite(new Color(1.0f, 0.84f, 0.20f), new Color(0.68f, 0.38f, 0.04f));
+                    bImg.type = Image.Type.Sliced;
+                    bImg.raycastTarget = true;
+
+                    string rewardTxt = (ach.CoinReward > 0) ? $"CLAIM (+{ach.CoinReward})" : "CLAIM";
+                    GameObject bTxt = CreateText(btnObj.transform, Vector2.zero, new Vector2(140f, 40f), rewardTxt, 17, FontStyle.Normal, Color.white, TextAnchor.MiddleCenter, font);
+                    MakeTextCrisp(bTxt.GetComponent<Text>(), new Color(0.40f, 0.22f, 0.02f, 0.98f), 1.0f);
+
+                    Button btn = btnObj.AddComponent<Button>();
+                    btn.onClick.AddListener(() =>
+                    {
+                        StartCoroutine(AnimateButtonPress(bRt, () =>
+                        {
+                            if (AchievementManager.Instance != null && AchievementManager.Instance.ClaimReward(capturedId))
+                            {
+                                RefreshAchievementsList();
+                            }
+                        }));
+                    });
+                }
+                else
+                {
+                    Image bImg = btnObj.AddComponent<Image>();
+                    bImg.sprite = SpriteFactory.Get3DPillBadgeSprite(new Color(0.14f, 0.22f, 0.38f), new Color(0.08f, 0.12f, 0.22f));
+                    bImg.type = Image.Type.Sliced;
+                    bImg.raycastTarget = false;
+
+                    string rewardTxt = (ach.CoinReward > 0) ? $"+{ach.CoinReward} 🪙" : "LOCKED";
+                    GameObject bTxt = CreateText(btnObj.transform, Vector2.zero, new Vector2(140f, 40f), rewardTxt, 16, FontStyle.Normal, new Color(0.55f, 0.70f, 0.90f), TextAnchor.MiddleCenter, font);
+                    MakeTextCrisp(bTxt.GetComponent<Text>(), Color.black, 0.8f);
+                }
+            }
+        }
     }
 
     /// <summary>
@@ -3956,6 +5519,9 @@ namespace BoxBlast
         public RectTransform logoRt;
         public RectTransform crownStarGlintRt;
         public RectTransform bgRaysRt;
+        public RectTransform ballDesignsPillRt;
+        public RectTransform centerShowcaseBallRt;
+        public RectTransform ballDesignsPromptRt;
         public List<BokehDriftData> bokehItems = new List<BokehDriftData>();
 
         private void Update()
@@ -4016,6 +5582,29 @@ namespace BoxBlast
                 crownStarGlintRt.localRotation = Quaternion.Euler(0, 0, t * 50f);
                 float glintPulse = 0.85f + 0.35f * Mathf.Sin(t * 3.5f);
                 crownStarGlintRt.localScale = new Vector3(glintPulse, glintPulse, 1f);
+            }
+
+            // 4. Home Page 3D Ball Designs Pill Organic Floating Pulse
+            if (ballDesignsPillRt != null)
+            {
+                float pillPulse = 1.0f + 0.015f * Mathf.Sin(t * 2.2f);
+                ballDesignsPillRt.localScale = new Vector3(pillPulse, pillPulse, 1f);
+            }
+
+            // 5. Central Cosmic Wheel Equipped Ball Showcase Bob & Breathing
+            if (centerShowcaseBallRt != null)
+            {
+                float ballPulse = 1.0f + 0.035f * Mathf.Sin(t * 2.6f);
+                float ballBob = Mathf.Sin(t * 1.8f) * 4f;
+                centerShowcaseBallRt.localScale = new Vector3(ballPulse, ballPulse, 1f);
+                centerShowcaseBallRt.anchoredPosition = new Vector2(0f, ballBob);
+            }
+
+            // 6. Floating Ball Designs Prompt Banner Gentle Breathing
+            if (ballDesignsPromptRt != null)
+            {
+                float bannerPulse = 1.0f + 0.02f * Mathf.Sin(t * 2.8f);
+                ballDesignsPromptRt.localScale = new Vector3(bannerPulse, bannerPulse, 1f);
             }
         }
     }

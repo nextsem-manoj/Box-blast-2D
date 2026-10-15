@@ -41,6 +41,7 @@ namespace BoxBlast
                 GetBlockSprite(BlockColors[i], BallSkinType.Classic);
             }
             LoadOrFallbackSprite("SettingsBackground_Concept2");
+            LoadOrFallbackSprite("GameOverBackground_Concept1");
             LoadOrFallbackSprite("Settings_Toggle_3D_ON");
             LoadOrFallbackSprite("Settings_Toggle_3D_OFF");
             LoadOrFallbackSprite("Settings_Btn_CloseX");
@@ -83,25 +84,35 @@ namespace BoxBlast
             string key = $"Sphere_{effectiveSkin}_{ColorUtility.ToHtmlStringRGBA(baseColor)}";
             if (s_SpriteCache.TryGetValue(key, out Sprite cached) && cached != null && cached.texture != null) return cached;
 
-            // When a ball design is equipped (Candy Swirl, Star Core, Orange Planet, etc.),
-            // return the authentic, crisp 3D ball skin render
-            Sprite skinSprite = GetSkinBlockSprite(effectiveSkin);
-            if (skinSprite != null)
+            // 1. For custom equipped skins (Star Core, Orange Planet, Lime Mint, etc.):
+            // Return the authentic 3D skin sprite directly from Resources!
+            if (effectiveSkin != BallSkinType.Classic)
             {
-                s_SpriteCache[key] = skinSprite;
-                return skinSprite;
-            }
-
-            string resSphere = GetConcept1SphereName(baseColor);
-            if (!string.IsNullOrEmpty(resSphere))
-            {
-                Sprite loadedSphere = LoadOrFallbackSprite(resSphere);
-                if (loadedSphere != null)
+                Sprite skinSprite = GetSkinBlockSprite(effectiveSkin);
+                if (skinSprite != null)
                 {
-                    s_SpriteCache[key] = loadedSphere;
-                    return loadedSphere;
+                    s_SpriteCache[key] = skinSprite;
+                    return skinSprite;
                 }
             }
+
+            // 2. For default gameplay (Classic): Return authentic vibrant 3D spheres (Red, Orange, Yellow, Green, Cyan, Blue, Purple, Pink)
+            if (effectiveSkin == BallSkinType.Classic)
+            {
+                string resSphere = GetConcept1SphereName(baseColor);
+                if (!string.IsNullOrEmpty(resSphere))
+                {
+                    Sprite loadedSphere = LoadOrFallbackSprite(resSphere);
+                    if (loadedSphere != null)
+                    {
+                        s_SpriteCache[key] = loadedSphere;
+                        return loadedSphere;
+                    }
+                }
+            }
+
+            // 3. Fallback: Procedurally render dynamic 3D sphere with baseColor
+            // and the equipped skin pattern applied to its interior.
 
             int size = 128;
             float radius = 59f;
@@ -883,6 +894,11 @@ namespace BoxBlast
             Sprite sprite = Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 100f, 0, SpriteMeshType.FullRect, border);
             s_SpriteCache[key] = sprite;
             return sprite;
+        }
+
+        public static Sprite GetCapsuleFillSprite()
+        {
+            return GetPillSprite(Color.white);
         }
 
         public static Sprite GetPillSprite(Color fillColor)
@@ -2733,7 +2749,41 @@ namespace BoxBlast
                 return sp;
             }
 
-            return GetWardrobeSkinSprite(type);
+            return null;
+        }
+
+        public static Sprite GetTreasureChestClosedSprite()
+        {
+            return LoadOrFallbackSprite("TreasureChest_Closed_3D");
+        }
+
+        public static Sprite GetTreasureChestOpenSprite()
+        {
+            return LoadOrFallbackSprite("TreasureChest_Open_3D");
+        }
+
+        /// <summary>
+        /// Option 2 (Design B): 3D Royal Golden Arch Header Plaque with Crown and Ribbon.
+        /// </summary>
+        public static Sprite GetRoyalArchHeaderPlaqueSprite()
+        {
+            return LoadOrFallbackSprite("RoyalArchHeader_Plaque", () => GetHeaderPlaqueSprite(true));
+        }
+
+        /// <summary>
+        /// Option 2 (Design B): 3D Cyan Crystal Gem Button with House Icon.
+        /// </summary>
+        public static Sprite GetCyanCrystalHomeButtonSprite()
+        {
+            return LoadOrFallbackSprite("CyanCrystal_HomeBtn", () => GetCircleButtonSprite(new Color(0.08f, 0.45f, 0.72f, 0.95f), new Color(0.25f, 0.92f, 1.0f, 1.0f), 0.10f));
+        }
+
+        /// <summary>
+        /// Option 2 (Design B): 3D Golden Gear Cogwheel Settings Button.
+        /// </summary>
+        public static Sprite GetGoldenGearSettingsButtonSprite()
+        {
+            return LoadOrFallbackSprite("GoldenGear_SettingsBtn", () => GetCircleButtonSprite(new Color(0.68f, 0.38f, 0.05f, 0.95f), new Color(1.0f, 0.85f, 0.25f, 1.0f), 0.10f));
         }
     }
 }

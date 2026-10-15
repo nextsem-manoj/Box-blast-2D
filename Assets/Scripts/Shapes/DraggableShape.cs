@@ -20,7 +20,7 @@ namespace BoxBlast
         public bool IsDragging { get; private set; }
 
         [Header("Drag Settings")]
-        [SerializeField] private float m_SlotScale = 0.74f;
+        [SerializeField] private float m_SlotScale = 0.88f;
         [SerializeField] private float m_BoardScale = 1.0f;
         [SerializeField] private float m_DragYOffset = 1.35f;
 
@@ -31,7 +31,7 @@ namespace BoxBlast
 
         // Smooth physics & dynamics
         private float m_CurrentLiftOffset = 0f;
-        private float m_CurrentScale = 0.74f;
+        private float m_CurrentScale = 0.88f;
         private float m_CurrentZAngle = 0f;
         private Vector3 m_LastPos;
 
@@ -216,6 +216,10 @@ namespace BoxBlast
             }
 
             HapticManager.TriggerLight();
+            if (UIManager.Instance != null)
+            {
+                UIManager.Instance.OnPlayerStartedDrag();
+            }
             UpdateDrag(pointerWorld);
         }
 

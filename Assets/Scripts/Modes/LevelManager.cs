@@ -139,6 +139,12 @@ namespace BoxBlast
                 UIManager.Instance.ShowLevelHUD(CurrentLevel, MovesRemaining, GetGoalProgressText());
                 UIManager.Instance.UpdateGemObjectives(CollectedGems, CurrentLevel.TargetGems);
                 UIManager.Instance.UpdateHUDVisibility();
+
+                // 6. First-Time Tutorial Hand Guide on Adventure Level 1
+                if (CurrentMode == GameModeType.Adventure && CurrentLevelNumber == 1 && PlayerPrefs.GetInt("BoxBlast_Tutorial_Completed", 0) == 0)
+                {
+                    UIManager.Instance.ShowTutorialGuide();
+                }
             }
         }
 
@@ -153,6 +159,7 @@ namespace BoxBlast
                 UIManager.Instance.HideDefeatModal();
                 UIManager.Instance.HideVictoryModal();
                 UIManager.Instance.HideLevelHUD();
+                UIManager.Instance.HideTutorialGuide(false);
             }
             if (GridManager.Instance != null)
             {
@@ -174,6 +181,12 @@ namespace BoxBlast
                 if (UIManager.Instance != null)
                 {
                     UIManager.Instance.UpdateMoves(MovesRemaining);
+
+                    // Low Moves Heartbeat Tension Alert when moves are running low (<= 5)
+                    if (MovesRemaining <= 5 && MovesRemaining > 0)
+                    {
+                        UIManager.Instance.TriggerLowMovesWarning(MovesRemaining);
+                    }
                 }
 
                 // Check victory after move
@@ -252,6 +265,11 @@ namespace BoxBlast
                 UIManager.Instance.FlyGemToHUD(gem, worldPos);
                 UIManager.Instance.UpdateGemObjectives(CollectedGems, CurrentLevel?.TargetGems);
                 UIManager.Instance.UpdateGoalProgress(GetGoalProgressText());
+            }
+
+            if (AchievementManager.Instance != null)
+            {
+                AchievementManager.Instance.ReportGemsCollected(1);
             }
 
             if (CheckGoalReached())
@@ -337,6 +355,11 @@ namespace BoxBlast
 
             SaveProgress(CurrentMode, CurrentLevelNumber, stars);
             UnlockLevel(CurrentMode, CurrentLevelNumber + 1);
+
+            if (AchievementManager.Instance != null)
+            {
+                AchievementManager.Instance.ReportLevelCompleted(CurrentMode, CurrentLevelNumber);
+            }
 
             SkinInfo unlockedSkin = null;
             if (CurrentMode == GameModeType.Adventure)

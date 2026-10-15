@@ -2543,5 +2543,82 @@ namespace BoxBlast
             s_IconCache[key] = sprite;
             return sprite;
         }
+
+        // ==========================================
+        // 👆 TUTORIAL POINTING HAND GLOVE
+        // ==========================================
+        public static Sprite GetTutorialHandSprite()
+        {
+            const string key = "TutorialHand_Glove_HD";
+            if (s_IconCache.TryGetValue(key, out Sprite cached) && cached != null && cached.texture != null) return cached;
+
+            int size = 128;
+            Texture2D tex = CreateEmptyTexture(size, size);
+            Color[] pixels = new Color[size * size];
+
+            Color whiteGlove = new Color(0.96f, 0.98f, 1.0f);
+            Color gloveShade = new Color(0.82f, 0.88f, 0.96f);
+            Color goldRim = new Color(1.0f, 0.84f, 0.20f);
+            Color darkRim = new Color(0.20f, 0.16f, 0.08f, 0.85f);
+
+            for (int y = 0; y < size; y++)
+            {
+                for (int x = 0; x < size; x++)
+                {
+                    float nx = (x - 64f) / 44f;
+                    float ny = (y - 56f) / 44f;
+
+                    // Pointing hand silhouette:
+                    // Index finger pointing up-left
+                    bool inIndex = (nx >= -0.32f && nx <= 0.05f && ny >= 0.0f && ny <= 1.05f);
+                    // Palm & curled fingers
+                    bool inPalm = (nx >= -0.45f && nx <= 0.55f && ny >= -0.55f && ny <= 0.15f);
+                    // Thumb
+                    bool inThumb = (nx >= -0.80f && nx <= -0.35f && ny >= -0.25f && ny <= 0.35f);
+                    // Cuff
+                    bool inCuff = (nx >= -0.35f && nx <= 0.45f && ny >= -0.85f && ny <= -0.55f);
+
+                    float distToGlove = 999f;
+                    if (inIndex || inPalm || inThumb || inCuff)
+                    {
+                        distToGlove = 0f;
+                    }
+                    else
+                    {
+                        // Check rounded caps
+                        float d1 = Vector2.Distance(new Vector2(nx, ny), new Vector2(-0.135f, 1.05f)) - 0.18f;
+                        float d2 = Vector2.Distance(new Vector2(nx, ny), new Vector2(-0.62f, 0.22f)) - 0.22f;
+                        float d3 = Vector2.Distance(new Vector2(nx, ny), new Vector2(0.40f, -0.20f)) - 0.20f;
+                        distToGlove = Mathf.Min(d1, Mathf.Min(d2, d3));
+                    }
+
+                    if (distToGlove <= 0.02f)
+                    {
+                        // Inside glove
+                        float shade = Mathf.Clamp01((ny + 0.8f) / 1.8f);
+                        Color c = Color.Lerp(gloveShade, whiteGlove, shade);
+                        if (inCuff) c = Color.Lerp(goldRim, new Color(1f, 0.95f, 0.55f), (nx + 0.35f) / 0.8f);
+                        pixels[y * size + x] = c;
+                    }
+                    else if (distToGlove <= 0.14f)
+                    {
+                        // Outline
+                        float a = Mathf.Clamp01((0.14f - distToGlove) / 0.12f);
+                        pixels[y * size + x] = new Color(darkRim.r, darkRim.g, darkRim.b, a);
+                    }
+                    else
+                    {
+                        pixels[y * size + x] = Color.clear;
+                    }
+                }
+            }
+
+            tex.SetPixels(pixels);
+            tex.Apply(true, false);
+
+            Sprite sprite = Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.38f, 0.88f), 100f);
+            s_IconCache[key] = sprite;
+            return sprite;
+        }
     }
 }

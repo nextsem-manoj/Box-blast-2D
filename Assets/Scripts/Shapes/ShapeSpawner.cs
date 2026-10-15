@@ -29,9 +29,9 @@ namespace BoxBlast
 
         private Vector3[] m_PortraitPositionsAdventure = new Vector3[]
         {
-            new Vector3(-2.15f, -5.10f, 0f),
-            new Vector3( 0.00f, -5.10f, 0f),
-            new Vector3( 2.15f, -5.10f, 0f)
+            new Vector3(-2.15f, -4.65f, 0f),
+            new Vector3( 0.00f, -4.65f, 0f),
+            new Vector3( 2.15f, -4.65f, 0f)
         };
 
         private Vector3[] GetPortraitPositions()
@@ -128,9 +128,8 @@ namespace BoxBlast
                     m_SlotBoxObjects[i].transform.localScale = new Vector3(bowlScale, bowlScale, 1f);
                 }
 
-                // Elevate bowl slightly (y - 0.02f) so shape blocks float naturally inside
-                // the crystal dish cavity without spilling downwards onto the golden filigree base!
-                Vector3 pedPos = new Vector3(m_CurrentSlotPositions[i].x, m_CurrentSlotPositions[i].y - 0.02f, 0f);
+                // 3D Royal Box is symmetric and centered directly under the shape slot
+                Vector3 pedPos = m_CurrentSlotPositions[i];
                 m_SlotBoxObjects[i].transform.position = pedPos;
             }
         }
@@ -148,7 +147,7 @@ namespace BoxBlast
                 if (m_SlotBoxObjects[i] != null)
                 {
                     m_SlotBoxObjects[i].transform.localScale = new Vector3(bowlScale, bowlScale, 1f);
-                    Vector3 pedPos = new Vector3(m_CurrentSlotPositions[i].x, m_CurrentSlotPositions[i].y - 0.02f, 0f);
+                    Vector3 pedPos = m_CurrentSlotPositions[i];
                     m_SlotBoxObjects[i].transform.position = pedPos;
                 }
 

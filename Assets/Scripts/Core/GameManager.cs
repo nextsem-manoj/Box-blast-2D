@@ -142,6 +142,11 @@ namespace BoxBlast
                 {
                     UIManager.Instance.UpdateBoosterBar();
                 }
+
+                if (AchievementManager.Instance != null)
+                {
+                    AchievementManager.Instance.ReportBoosterUsed(type);
+                }
                 return true;
             }
             return false;
@@ -223,6 +228,11 @@ namespace BoxBlast
             CurrentScore += points;
             CheckBestScore();
 
+            if (AchievementManager.Instance != null)
+            {
+                AchievementManager.Instance.ReportScore(CurrentScore, IsClassicActive);
+            }
+
             if (UIManager.Instance != null)
             {
                 UIManager.Instance.UpdateScore(CurrentScore, BestScore);
@@ -244,6 +254,14 @@ namespace BoxBlast
             CurrentScore += totalBonus;
             CheckBestScore();
 
+            // Report to Achievement Manager
+            if (AchievementManager.Instance != null)
+            {
+                AchievementManager.Instance.ReportLinesCleared(linesCleared);
+                AchievementManager.Instance.ReportCombo(CurrentCombo);
+                AchievementManager.Instance.ReportScore(CurrentScore, IsClassicActive);
+            }
+
             // Award Coins on line clear!
             int coinsEarned = 10 * linesCleared * CurrentCombo;
             AddCoins(coinsEarned, false);
@@ -251,6 +269,9 @@ namespace BoxBlast
             if (UIManager.Instance != null)
             {
                 UIManager.Instance.UpdateScore(CurrentScore, BestScore);
+
+                // Trigger Dynamic Juicy Combo & Multi-line Callouts! ("GREAT!", "AMAZING!", "MEGA BLAST!")
+                UIManager.Instance.ShowComboCallout(CurrentCombo, linesCleared, boardCenter);
             }
 
             if (CurrentCombo > 1)

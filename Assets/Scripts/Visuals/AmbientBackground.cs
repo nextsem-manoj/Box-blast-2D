@@ -73,7 +73,8 @@ namespace BoxBlast
             Sprite c1Bg = Resources.Load<Sprite>("GameplayBackground_Concept1");
             m_BackdropSr.sprite = (c1Bg != null) ? c1Bg : SpriteFactory.GetCosmicStarryBackgroundSprite();
             m_BackdropSr.sortingOrder = -25;
-            m_BackdropSr.color = Color.white;
+            // Soften background brightness slightly so foreground board & golden boxes pop with AAA contrast
+            m_BackdropSr.color = new Color(0.72f, 0.72f, 0.82f, 1f);
         }
 
         private void BuildStarField()

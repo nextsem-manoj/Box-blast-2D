@@ -49,6 +49,7 @@ namespace BoxBlast
                 m_GemRenderer = m_GemObj.AddComponent<SpriteRenderer>();
                 m_GemRenderer.sortingOrder = 12; // Above block sphere
                 m_GemObj.transform.localScale = Vector3.one * GridCell.GemScale;
+                m_GemObj.transform.localPosition = new Vector3(0f, 0.02f, 0f); // Calibrated visual centroid alignment
                 m_GemObj.SetActive(false);
             }
         }

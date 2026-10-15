@@ -102,13 +102,13 @@ namespace BoxBlast
 
             Sprite curSprite = m_BoardBgObj.GetComponent<SpriteRenderer>()?.sprite;
             float totalSpan = (BoardWidth - 1) * TotalCellStep;
-            // Gameplay_BoardFrame_Concept1 circular socket centers span exactly 736.92px (X) and 742.04px (Y) on 940 PPU texture (934x945).
-            // Sockets center on texture: (465.94px, 476.87px from bottom). Texture pivot (0.5, 0.5) is at (467.0px, 472.5px).
-            // Offsets from pivot: deltaX = -1.06px, deltaY = +4.37px on 940 PPU.
-            float scaleX = (curSprite != null && curSprite.name.Contains("BoardFrame")) ? (totalSpan / (736.92f / 940f)) : (BoardWidth * TotalCellStep + 0.32f);
-            float scaleY = (curSprite != null && curSprite.name.Contains("BoardFrame")) ? (totalSpan / (742.04f / 940f)) : (BoardHeight * TotalCellStep + 0.32f);
-            float offsetX = (curSprite != null && curSprite.name.Contains("BoardFrame")) ? ((-1.06f / 940f) * scaleX) : 0f;
-            float offsetY = (curSprite != null && curSprite.name.Contains("BoardFrame")) ? ((4.37f / 940f) * scaleY) : 0f;
+            // Gameplay_BoardFrame_Concept1 8x8 clean checkerboard tile centers span exactly 733.25px (X) and 742.88px (Y) on 940 PPU texture (934x945).
+            // Tile grid center on texture: (466.00px, 472.50px from bottom). Texture pivot (0.5, 0.5) is at (467.0px, 472.5px).
+            // Offsets from pivot: deltaX = -1.00px, deltaY = 0.00px on 940 PPU.
+            float scaleX = (curSprite != null && curSprite.name.Contains("BoardFrame")) ? (totalSpan / (733.25f / 940f)) : (BoardWidth * TotalCellStep + 0.32f);
+            float scaleY = (curSprite != null && curSprite.name.Contains("BoardFrame")) ? (totalSpan / (742.88f / 940f)) : (BoardHeight * TotalCellStep + 0.32f);
+            float offsetX = (curSprite != null && curSprite.name.Contains("BoardFrame")) ? ((-1.00f / 940f) * scaleX) : 0f;
+            float offsetY = 0f;
             m_BoardBgObj.transform.position = new Vector3(m_GridCenter.x - offsetX, m_GridCenter.y - offsetY, 0f);
             m_BoardBgObj.transform.localScale = new Vector3(scaleX, scaleY, 1f);
 
@@ -546,6 +546,7 @@ namespace BoxBlast
                 foreach (GridCell cell in cellsToClear)
                 {
                     clearedColors.Add(cell.CurrentColor);
+                    cell.FreeLogicOccupancy();
                 }
 
                 if (LineBlastAnimator.Instance != null && LineBlastAnimator.Instance.IsAnimationEnabled)

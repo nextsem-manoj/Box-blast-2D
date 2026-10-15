@@ -141,6 +141,9 @@ namespace BoxBlast
             int totalClears = fullRows.Count + fullCols.Count + fullSectors.Count;
             if (totalClears <= 0) return;
 
+            // Shared set to ensure any cell at an intersection is only blasted/popped ONCE
+            HashSet<GridCell> alreadyPoppedCells = new HashSet<GridCell>();
+
             // Trigger intersections if both row and col cleared simultaneously
             if (fullRows.Count > 0 && fullCols.Count > 0)
             {
@@ -172,7 +175,7 @@ namespace BoxBlast
                     }
                 }
 
-                StartCoroutine(AnimateRowBlast(y, rowCells, dominantColor, rowDelay));
+                StartCoroutine(AnimateRowBlast(y, rowCells, dominantColor, rowDelay, alreadyPoppedCells));
                 rowDelay += 0.045f;
             }
 
@@ -191,7 +194,7 @@ namespace BoxBlast
                     }
                 }
 
-                StartCoroutine(AnimateColBlast(x, colCells, dominantColor, colDelay));
+                StartCoroutine(AnimateColBlast(x, colCells, dominantColor, colDelay, alreadyPoppedCells));
                 colDelay += 0.045f;
             }
 
@@ -200,7 +203,7 @@ namespace BoxBlast
             {
                 foreach (Vector2Int sector in fullSectors)
                 {
-                    StartCoroutine(AnimateSectorCells(sector, cells));
+                    StartCoroutine(AnimateSectorCells(sector, cells, alreadyPoppedCells));
                 }
             }
         }
@@ -208,7 +211,7 @@ namespace BoxBlast
         // ========================================================
         // 🌈 ROW BLAST (HORIZONTAL SWEEP)
         // ========================================================
-        private IEnumerator AnimateRowBlast(int rowY, List<GridCell> rowCells, Color beamColor, float startDelay)
+        private IEnumerator AnimateRowBlast(int rowY, List<GridCell> rowCells, Color beamColor, float startDelay, HashSet<GridCell> alreadyPopped)
         {
             if (startDelay > 0f) yield return new WaitForSeconds(startDelay);
             if (rowCells == null || rowCells.Count == 0) yield break;
@@ -242,7 +245,7 @@ namespace BoxBlast
             for (int i = 0; i < rowCells.Count; i++)
             {
                 GridCell cell = rowCells[i];
-                if (cell != null && cell.IsOccupied)
+                if (cell != null && (alreadyPopped == null || alreadyPopped.Add(cell)))
                 {
                     Color cellColor = cell.CurrentColor;
                     cell.Clear(true, 0f);
@@ -260,7 +263,7 @@ namespace BoxBlast
         // ========================================================
         // ⚡ COLUMN BLAST (VERTICAL SWEEP)
         // ========================================================
-        private IEnumerator AnimateColBlast(int colX, List<GridCell> colCells, Color beamColor, float startDelay)
+        private IEnumerator AnimateColBlast(int colX, List<GridCell> colCells, Color beamColor, float startDelay, HashSet<GridCell> alreadyPopped)
         {
             if (startDelay > 0f) yield return new WaitForSeconds(startDelay);
             if (colCells == null || colCells.Count == 0) yield break;
@@ -293,7 +296,7 @@ namespace BoxBlast
             for (int i = 0; i < colCells.Count; i++)
             {
                 GridCell cell = colCells[i];
-                if (cell != null && cell.IsOccupied)
+                if (cell != null && (alreadyPopped == null || alreadyPopped.Add(cell)))
                 {
                     Color cellColor = cell.CurrentColor;
                     cell.Clear(true, 0f);
@@ -405,7 +408,7 @@ namespace BoxBlast
         // ========================================================
         // 🔮 3x3 SECTOR RIPPLE
         // ========================================================
-        private IEnumerator AnimateSectorCells(Vector2Int sector, GridCell[,] cells)
+        private IEnumerator AnimateSectorCells(Vector2Int sector, GridCell[,] cells, HashSet<GridCell> alreadyPopped)
         {
             int startX = sector.x * 3;
             int startY = sector.y * 3;
@@ -416,7 +419,7 @@ namespace BoxBlast
                 for (int dx = 0; dx < 3; dx++)
                 {
                     GridCell cell = cells[startX + dx, startY + dy];
-                    if (cell != null && cell.IsOccupied)
+                    if (cell != null && (alreadyPopped == null || alreadyPopped.Add(cell)))
                     {
                         cell.Clear(true, 0f);
                         if (ParticleFXManager.Instance != null)

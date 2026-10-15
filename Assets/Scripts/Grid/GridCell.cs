@@ -20,8 +20,8 @@ namespace BoxBlast
         private SpriteRenderer m_PreviewRenderer;
         private SpriteRenderer m_LineGlowRenderer;
 
-        public const float BlockScale = 0.69f;
-        public const float GemScale = 0.80f;
+        public const float BlockScale = 0.88f;
+        public const float GemScale = 0.52f;
 
         private GameObject m_BlockObj;
         private GameObject m_PreviewObj;
@@ -73,12 +73,13 @@ namespace BoxBlast
             m_BlockObj.transform.localScale = Vector3.one * BlockScale;
             m_BlockObj.SetActive(false);
 
-            // Embedded Sparkling Gem inside Sphere
+            // Embedded Sparkling Gem centered inside Sphere
             m_GemObj = new GameObject($"Gem_{x}_{y}");
             m_GemObj.transform.SetParent(m_BlockObj.transform, false);
             m_GemRenderer = m_GemObj.AddComponent<SpriteRenderer>();
             m_GemRenderer.sortingOrder = 6; // Above sphere body (4)
             m_GemObj.transform.localScale = Vector3.one * GemScale;
+            m_GemObj.transform.localPosition = new Vector3(0f, 0.02f, 0f); // Calibrated visual centroid alignment
             m_GemObj.SetActive(false);
         }
 
@@ -193,9 +194,20 @@ namespace BoxBlast
             }
         }
 
+        /// <summary>
+        /// Instantly frees the logical occupancy of this cell on the grid.
+        /// This ensures move availability checks (Game Over) and batch spawning
+        /// recognize the cell as open immediately on the same frame, while the visual
+        /// laser sweep or bubble blast continues to animate.
+        /// </summary>
+        public void FreeLogicOccupancy()
+        {
+            IsOccupied = false;
+        }
+
         public void Clear(bool animate = true, float delay = 0f, bool harvestGem = true)
         {
-            if (!IsOccupied) return;
+            if (!IsOccupied && (m_BlockObj == null || !m_BlockObj.activeSelf)) return;
             IsOccupied = false;
 
             // Harvest embedded gemstone towards adventure level objectives ONLY on real gameplay line clears!

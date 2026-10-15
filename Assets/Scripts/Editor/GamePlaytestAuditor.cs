@@ -184,18 +184,18 @@ namespace BoxBlast.Editor
             sb.AppendLine("\n--- [5] BALL & GEM SIZING PROPORTIONS AUDIT ---");
             float blockScale = GridCell.BlockScale;
             float gemScale = GridCell.GemScale;
-            sb.AppendLine($"  GridCell.BlockScale = {blockScale} (Expected: ~0.69f)");
-            sb.AppendLine($"  GridCell.GemScale = {gemScale} (Expected: ~0.80f)");
+            sb.AppendLine($"  GridCell.BlockScale = {blockScale} (Expected: ~0.88f)");
+            sb.AppendLine($"  GridCell.GemScale = {gemScale} (Expected: ~0.52f)");
 
-            if (blockScale > 0.78f)
+            if (blockScale > 1.05f)
             {
                 warningCount++;
-                sb.AppendLine("  [WARN] BlockScale is too large (>0.78f), risk of overflowing circular socket dish!");
+                sb.AppendLine("  [WARN] BlockScale is too large (>1.05f), risk of overflowing circular socket dish!");
             }
-            else if (blockScale < 0.60f)
+            else if (blockScale < 0.78f)
             {
                 warningCount++;
-                sb.AppendLine("  [WARN] BlockScale is too small (<0.60f), spheres look shrunken inside socket!");
+                sb.AppendLine("  [WARN] BlockScale is too small (<0.78f), spheres look shrunken inside socket!");
             }
             else
             {
@@ -203,15 +203,20 @@ namespace BoxBlast.Editor
                 sb.AppendLine("  [PASS] BlockScale sits snugly within the socket rim with elegant margins.");
             }
 
-            if (gemScale < 0.65f)
+            if (gemScale > 0.65f)
             {
                 warningCount++;
-                sb.AppendLine("  [WARN] GemScale is small (<0.65f), gems appear tiny inside spheres!");
+                sb.AppendLine("  [WARN] GemScale is too large (>0.65f), gems overflow ball core!");
+            }
+            else if (gemScale < 0.38f)
+            {
+                warningCount++;
+                sb.AppendLine("  [WARN] GemScale is small (<0.38f), gems appear tiny inside spheres!");
             }
             else
             {
                 passCount++;
-                sb.AppendLine("  [PASS] GemScale is prominent, bold, and easily readable.");
+                sb.AppendLine("  [PASS] GemScale is centered snugly inside the glossy sphere body.");
             }
 
             // -------------------------------------------------------------

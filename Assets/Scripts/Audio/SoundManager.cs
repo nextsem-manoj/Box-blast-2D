@@ -36,6 +36,10 @@ namespace BoxBlast
         private AudioClip m_ShuffleClip;
         private AudioClip m_CoinClip;
         private AudioClip m_PurchaseClip;
+        private AudioClip m_TensionTickClip;
+        private AudioClip m_FanfareClip;
+        private AudioClip m_AchievementClip;
+        private AudioClip m_TutorialPromptClip;
 
         public bool IsMusicEnabled { get; private set; } = true;
         public bool IsSfxEnabled { get; private set; } = true;
@@ -131,6 +135,33 @@ namespace BoxBlast
             m_ShuffleClip = CreateArpeggioClip("Shuffle", 0.25f);
             m_CoinClip = CreateToneClip("Coin", 0.10f, 987.77f, 1318.51f, 0.5f); // B5 to E6 chime
             m_PurchaseClip = CreateArpeggioClip("Purchase", 0.40f);
+
+            // Dynamic Combo Fanfare, Tension Tick, and Achievement Chimes
+            m_TensionTickClip = CreateToneClip("TensionTick", 0.06f, 220f, 110f, 0.65f);
+            m_FanfareClip = CreateFanfareClip("Fanfare", 0.48f);
+            m_AchievementClip = CreateAchievementChimeClip("Achievement", 0.60f);
+            m_TutorialPromptClip = CreateToneClip("TutorialPrompt", 0.12f, 440f, 660f, 0.5f);
+        }
+
+        public void PlayTensionTick()
+        {
+            PlayClip(m_TensionTickClip, 0.85f, Random.Range(0.96f, 1.04f));
+        }
+
+        public void PlayComboFanfare(int combo = 3)
+        {
+            float pitch = Mathf.Clamp(1.0f + (combo - 3) * 0.1f, 1.0f, 1.35f);
+            PlayClip(m_FanfareClip, 0.95f, pitch);
+        }
+
+        public void PlayAchievement()
+        {
+            PlayClip(m_AchievementClip, 1.0f, 1.0f);
+        }
+
+        public void PlayTutorialPrompt()
+        {
+            PlayClip(m_TutorialPromptClip, 0.7f, 1.05f);
         }
 
         public void PlayPickUp()
@@ -400,6 +431,56 @@ namespace BoxBlast
                 float noteT = (t * notes.Length) % 1f;
                 float env = 1f - noteT;
                 samples[i] = Mathf.Sin(2 * Mathf.PI * notes[noteIndex] * (i / (float)sampleRate)) * env * 0.45f;
+            }
+
+            AudioClip clip = AudioClip.Create(clipName, totalSamples, 1, sampleRate, false);
+            clip.SetData(samples, 0);
+            return clip;
+        }
+
+        private static AudioClip CreateFanfareClip(string clipName, float duration)
+        {
+            int sampleRate = 44100;
+            int totalSamples = Mathf.FloorToInt(sampleRate * duration);
+            float[] samples = new float[totalSamples];
+            // Triumphant rising brass arpeggio: C5 -> E5 -> G5 -> C6
+            float[] notes = { 523.25f, 659.25f, 783.99f, 1046.50f };
+
+            for (int i = 0; i < totalSamples; i++)
+            {
+                float t = (float)i / totalSamples;
+                int noteIndex = Mathf.Clamp(Mathf.FloorToInt(t * notes.Length), 0, notes.Length - 1);
+                float noteT = (t * notes.Length) % 1f;
+                float env = Mathf.Pow(1f - noteT, 1.2f);
+                float freq = notes[noteIndex];
+                float sine = Mathf.Sin(2 * Mathf.PI * freq * (i / (float)sampleRate));
+                float harmonic = Mathf.Sin(4 * Mathf.PI * freq * (i / (float)sampleRate)) * 0.35f;
+                samples[i] = (sine + harmonic) * env * 0.55f;
+            }
+
+            AudioClip clip = AudioClip.Create(clipName, totalSamples, 1, sampleRate, false);
+            clip.SetData(samples, 0);
+            return clip;
+        }
+
+        private static AudioClip CreateAchievementChimeClip(string clipName, float duration)
+        {
+            int sampleRate = 44100;
+            int totalSamples = Mathf.FloorToInt(sampleRate * duration);
+            float[] samples = new float[totalSamples];
+            // Sparkling golden glockenspiel chords: F5 -> A5 -> C6 -> E6 -> G6
+            float[] notes = { 698.46f, 880.00f, 1046.50f, 1318.51f, 1567.98f };
+
+            for (int i = 0; i < totalSamples; i++)
+            {
+                float t = (float)i / totalSamples;
+                int noteIndex = Mathf.Clamp(Mathf.FloorToInt(t * notes.Length), 0, notes.Length - 1);
+                float noteT = (t * notes.Length) % 1f;
+                float env = Mathf.Exp(-noteT * 3.5f);
+                float freq = notes[noteIndex];
+                float chime = Mathf.Sin(2 * Mathf.PI * freq * (i / (float)sampleRate)) * 0.7f +
+                              Mathf.Sin(6 * Mathf.PI * freq * (i / (float)sampleRate)) * 0.3f;
+                samples[i] = chime * env * 0.55f;
             }
 
             AudioClip clip = AudioClip.Create(clipName, totalSamples, 1, sampleRate, false);
