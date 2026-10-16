@@ -2323,7 +2323,7 @@ namespace BoxBlast
 
             AspectRatioFitter arf = cardObj.AddComponent<AspectRatioFitter>();
             arf.aspectMode = AspectRatioFitter.AspectMode.FitInParent;
-            arf.aspectRatio = 1152f / 2048f; // 0.5625f exact aspect ratio
+            arf.aspectRatio = 1080f / 2400f; // 0.45f exact modern mobile 9:20 aspect ratio
 
             // Concept 3 Master 3D Artwork (Ball Blast crown, 8 element spheres, rainbow star, 3D Adventure button)
             Image bg = cardObj.AddComponent<Image>();
@@ -2336,8 +2336,8 @@ namespace BoxBlast
             GameObject advBtnObj = new GameObject("Button_Adventure");
             advBtnObj.transform.SetParent(cardObj.transform, false);
             RectTransform advRt = advBtnObj.AddComponent<RectTransform>();
-            advRt.anchorMin = new Vector2(0.145f, 0.130f);
-            advRt.anchorMax = new Vector2(0.855f, 0.235f);
+            advRt.anchorMin = new Vector2(0.14f, 0.308f);
+            advRt.anchorMax = new Vector2(0.86f, 0.396f);
             advRt.offsetMin = Vector2.zero;
             advRt.offsetMax = Vector2.zero;
 
@@ -2372,8 +2372,8 @@ namespace BoxBlast
             GameObject classicBtnObj = new GameObject("Button_Classic");
             classicBtnObj.transform.SetParent(cardObj.transform, false);
             RectTransform clRt = classicBtnObj.AddComponent<RectTransform>();
-            clRt.anchorMin = new Vector2(0.18f, 0.024f);
-            clRt.anchorMax = new Vector2(0.82f, 0.118f);
+            clRt.anchorMin = new Vector2(0.15f, 0.200f);
+            clRt.anchorMax = new Vector2(0.85f, 0.288f);
             clRt.offsetMin = Vector2.zero;
             clRt.offsetMax = Vector2.zero;
 
@@ -2413,8 +2413,8 @@ namespace BoxBlast
             GameObject settingsBtnObj = new GameObject("Button_Settings");
             settingsBtnObj.transform.SetParent(cardObj.transform, false);
             RectTransform stRt = settingsBtnObj.AddComponent<RectTransform>();
-            stRt.anchorMin = new Vector2(0.825f, 0.865f);
-            stRt.anchorMax = new Vector2(0.985f, 0.955f);
+            stRt.anchorMin = new Vector2(0.825f, 0.900f);
+            stRt.anchorMax = new Vector2(0.985f, 0.970f);
             stRt.offsetMin = Vector2.zero;
             stRt.offsetMax = Vector2.zero;
 
@@ -2445,8 +2445,8 @@ namespace BoxBlast
             GameObject wardrobeBtnObj = new GameObject("Button_Wardrobe");
             wardrobeBtnObj.transform.SetParent(cardObj.transform, false);
             RectTransform wdRt = wardrobeBtnObj.AddComponent<RectTransform>();
-            wdRt.anchorMin = new Vector2(0.015f, 0.865f);
-            wdRt.anchorMax = new Vector2(0.175f, 0.955f);
+            wdRt.anchorMin = new Vector2(0.015f, 0.900f);
+            wdRt.anchorMax = new Vector2(0.175f, 0.970f);
             wdRt.offsetMin = Vector2.zero;
             wdRt.offsetMax = Vector2.zero;
             m_HomeBallDesignsPillRt = wdRt;
@@ -2478,8 +2478,8 @@ namespace BoxBlast
             GameObject crownStarGlint = new GameObject("CrownStarGlint");
             crownStarGlint.transform.SetParent(cardObj.transform, false);
             RectTransform csgRt = crownStarGlint.AddComponent<RectTransform>();
-            csgRt.anchorMin = new Vector2(0.50f, 0.955f);
-            csgRt.anchorMax = new Vector2(0.50f, 0.955f);
+            csgRt.anchorMin = new Vector2(0.50f, 0.965f);
+            csgRt.anchorMax = new Vector2(0.50f, 0.965f);
             csgRt.anchoredPosition = Vector2.zero;
             csgRt.sizeDelta = new Vector2(36, 36);
             Image csgImg = crownStarGlint.AddComponent<Image>();
@@ -2491,8 +2491,8 @@ namespace BoxBlast
             GameObject crownTapObj = new GameObject("Crown_InteractiveZone");
             crownTapObj.transform.SetParent(cardObj.transform, false);
             RectTransform crRt = crownTapObj.AddComponent<RectTransform>();
-            crRt.anchorMin = new Vector2(0.35f, 0.885f);
-            crRt.anchorMax = new Vector2(0.65f, 0.965f);
+            crRt.anchorMin = new Vector2(0.35f, 0.900f);
+            crRt.anchorMax = new Vector2(0.65f, 0.970f);
             crRt.offsetMin = Vector2.zero;
             crRt.offsetMax = Vector2.zero;
             Image crImg = crownTapObj.AddComponent<Image>();
