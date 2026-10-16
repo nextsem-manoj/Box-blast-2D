@@ -8,6 +8,126 @@ using UnityEngine;
 
 namespace BoxBlast.Editor
 {
+    public class AABBuildWindow : EditorWindow
+    {
+        private string m_VersionName = "1.0.3";
+        private int m_VersionCode = 7;
+        private bool m_UniversalArch = false;
+        private bool m_AutoIncrement = true;
+
+        [MenuItem("Build/🚀 Android AAB Build Center...", false, 0)]
+        public static void OpenWindow()
+        {
+            var window = GetWindow<AABBuildWindow>("AAB Builder");
+            window.minSize = new Vector2(420, 400);
+            window.Show();
+        }
+
+        private void OnEnable()
+        {
+            m_VersionName = string.IsNullOrEmpty(PlayerSettings.bundleVersion) || PlayerSettings.bundleVersion == "1.0.2" 
+                ? "1.0.3" 
+                : PlayerSettings.bundleVersion;
+
+            // Google Play has Release 6 active, so next release must be >= 7
+            m_VersionCode = Mathf.Max(PlayerSettings.Android.bundleVersionCode, 7);
+        }
+
+        private void OnGUI()
+        {
+            GUILayout.Space(10);
+            EditorGUILayout.LabelField("Android App Bundle (.aab) Builder", EditorStyles.boldLabel);
+            EditorGUILayout.HelpBox("Play Console has Release 6 (1.0.2) active. This tool creates Release 7+ (.AAB) signed with boxblast.keystore.", MessageType.Info);
+
+            GUILayout.Space(10);
+            EditorGUILayout.LabelField("App Identity & Versioning", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField("Package ID:", "com.nextsem.boxblast2d");
+
+            m_VersionName = EditorGUILayout.TextField("Version Name (e.g. 1.0.3):", m_VersionName);
+
+            EditorGUILayout.BeginHorizontal();
+            m_VersionCode = EditorGUILayout.IntField("Version Code (Must be >= 7):", m_VersionCode);
+            if (GUILayout.Button("+1", GUILayout.Width(40)))
+            {
+                m_VersionCode++;
+            }
+            EditorGUILayout.EndHorizontal();
+
+            if (m_VersionCode <= 6)
+            {
+                EditorGUILayout.HelpBox("WARNING: Version code must be at least 7 because Release 6 is already published on Google Play!", MessageType.Error);
+            }
+
+            m_AutoIncrement = EditorGUILayout.Toggle("Auto +1 on Next Build", m_AutoIncrement);
+
+            GUILayout.Space(10);
+            EditorGUILayout.LabelField("Target Architecture", EditorStyles.boldLabel);
+            m_UniversalArch = EditorGUILayout.ToggleLeft("Universal (ARM64 + ARMv7) [~15MB]", m_UniversalArch);
+            if (!m_UniversalArch)
+            {
+                EditorGUILayout.HelpBox("ARM64 Only (Recommended for Google Play, <10MB size)", MessageType.None);
+            }
+
+            GUILayout.Space(10);
+            string projectRoot = Path.GetFullPath(Path.Combine(Application.dataPath, ".."));
+            string keystorePath = Path.Combine(projectRoot, "boxblast.keystore");
+            bool keystoreFound = File.Exists(keystorePath);
+
+            EditorGUILayout.BeginHorizontal();
+            EditorGUILayout.LabelField("Keystore Status:", GUILayout.Width(110));
+            if (keystoreFound)
+            {
+                GUI.color = Color.green;
+                EditorGUILayout.LabelField("✓ Verified boxblast.keystore (Upload Key)", EditorStyles.boldLabel);
+                GUI.color = Color.white;
+            }
+            else
+            {
+                GUI.color = Color.yellow;
+                EditorGUILayout.LabelField("Using fallback keystore", EditorStyles.boldLabel);
+                GUI.color = Color.white;
+            }
+            EditorGUILayout.EndHorizontal();
+
+            GUILayout.Space(15);
+            GUI.backgroundColor = new Color(0.2f, 0.75f, 0.3f);
+            if (GUILayout.Button($"▶ BUILD RELEASE {m_VersionCode} (.AAB) NOW", GUILayout.Height(45)))
+            {
+                PlayerSettings.bundleVersion = m_VersionName;
+                PlayerSettings.Android.bundleVersionCode = m_VersionCode;
+
+                AndroidArchitecture arch = m_UniversalArch 
+                    ? (AndroidArchitecture.ARM64 | AndroidArchitecture.ARMv7) 
+                    : AndroidArchitecture.ARM64;
+                string fileName = m_UniversalArch 
+                    ? $"BoxBlast2D_v{m_VersionCode}_Universal.aab" 
+                    : $"BoxBlast2D_v{m_VersionCode}_ARM64.aab";
+
+                bool success = AndroidBuildScript.PerformBuild(arch, fileName, isHeadless: false, customVersionCode: m_VersionCode, customVersionName: m_VersionName);
+                if (success && m_AutoIncrement)
+                {
+                    m_VersionCode++;
+                    PlayerSettings.Android.bundleVersionCode = m_VersionCode;
+                }
+            }
+            GUI.backgroundColor = Color.white;
+
+            GUILayout.Space(8);
+            EditorGUILayout.BeginHorizontal();
+            if (GUILayout.Button("📁 Open Builds Folder"))
+            {
+                string outDir = Path.Combine(projectRoot, "Builds/Android");
+                if (!Directory.Exists(outDir)) Directory.CreateDirectory(outDir);
+                EditorUtility.RevealInFinder(outDir);
+            }
+            if (GUILayout.Button("⚙ Unity Build Settings"))
+            {
+                EditorWindow.GetWindow(Type.GetType("UnityEditor.BuildPlayerWindow,UnityEditor"));
+            }
+            EditorGUILayout.EndHorizontal();
+        }
+    }
+
     public static class AndroidBuildScript
     {
         private const string BuildOutputDirectory = "Builds/Android";
@@ -15,22 +135,27 @@ namespace BoxBlast.Editor
         [MenuItem("Build/Build Android AAB (<10MB Optimized - ARM64)", false, 10)]
         public static void BuildOptimizedAAB()
         {
-            PerformBuild(AndroidArchitecture.ARM64, "BoxBlast2D_v2_ARM64.aab");
+            int code = Mathf.Max(PlayerSettings.Android.bundleVersionCode, 7);
+            string name = string.IsNullOrEmpty(PlayerSettings.bundleVersion) || PlayerSettings.bundleVersion == "1.0.2" ? "1.0.3" : PlayerSettings.bundleVersion;
+            PerformBuild(AndroidArchitecture.ARM64, $"BoxBlast2D_v{code}_ARM64.aab", customVersionCode: code, customVersionName: name);
         }
 
         [MenuItem("Build/Build Android AAB (Universal ARM64 + ARMv7)", false, 11)]
         public static void BuildUniversalAAB()
         {
-            PerformBuild(AndroidArchitecture.ARM64 | AndroidArchitecture.ARMv7, "BoxBlast2D_v2_Universal.aab");
+            int code = Mathf.Max(PlayerSettings.Android.bundleVersionCode, 7);
+            string name = string.IsNullOrEmpty(PlayerSettings.bundleVersion) || PlayerSettings.bundleVersion == "1.0.2" ? "1.0.3" : PlayerSettings.bundleVersion;
+            PerformBuild(AndroidArchitecture.ARM64 | AndroidArchitecture.ARMv7, $"BoxBlast2D_v{code}_Universal.aab", customVersionCode: code, customVersionName: name);
         }
 
         public static void BuildCommandLine()
         {
             Debug.Log("[AndroidBuildScript] Starting CLI Android AAB build...");
-            PerformBuild(AndroidArchitecture.ARM64, "BoxBlast2D_v2_ARM64.aab", isHeadless: true);
+            int code = Mathf.Max(PlayerSettings.Android.bundleVersionCode, 7);
+            PerformBuild(AndroidArchitecture.ARM64, $"BoxBlast2D_v{code}_ARM64.aab", isHeadless: true, customVersionCode: code);
         }
 
-        public static bool PerformBuild(AndroidArchitecture architectures, string fileName, bool isHeadless = false)
+        public static bool PerformBuild(AndroidArchitecture architectures, string fileName, bool isHeadless = false, int? customVersionCode = null, string customVersionName = null)
         {
             try
             {
@@ -79,18 +204,29 @@ namespace BoxBlast.Editor
                 PlayerSettings.SetIl2CppCompilerConfiguration(androidTarget, Il2CppCompilerConfiguration.Master);
                 PlayerSettings.SetIl2CppCodeGeneration(androidTarget, Il2CppCodeGeneration.OptimizeSize);
 
-                // 6. Google Play Identity & Version Code Increment
+                // 6. Google Play Identity & Version Code
                 PlayerSettings.SetApplicationIdentifier(androidTarget, "com.nextsem.boxblast2d");
                 PlayerSettings.productName = "Box Blast 2D";
                 PlayerSettings.companyName = "NextSem";
                 
-                // Increment versionCode so Play Console accepts the update
-                int currentVersionCode = PlayerSettings.Android.bundleVersionCode;
-                if (currentVersionCode < 2)
+                // Release 6 is already live in Google Play Console, so new upload must be >= 7
+                if (customVersionCode.HasValue)
                 {
-                    PlayerSettings.Android.bundleVersionCode = 2;
+                    PlayerSettings.Android.bundleVersionCode = customVersionCode.Value;
                 }
-                PlayerSettings.bundleVersion = "1.1";
+                else if (PlayerSettings.Android.bundleVersionCode < 7)
+                {
+                    PlayerSettings.Android.bundleVersionCode = 7;
+                }
+
+                if (!string.IsNullOrEmpty(customVersionName))
+                {
+                    PlayerSettings.bundleVersion = customVersionName;
+                }
+                else if (string.IsNullOrEmpty(PlayerSettings.bundleVersion) || PlayerSettings.bundleVersion == "1.0.2")
+                {
+                    PlayerSettings.bundleVersion = "1.0.3";
+                }
 
                 PlayerSettings.Android.minSdkVersion = AndroidSdkVersions.AndroidApiLevel26;
                 PlayerSettings.Android.targetSdkVersion = AndroidSdkVersions.AndroidApiLevelAuto;
@@ -152,7 +288,7 @@ namespace BoxBlast.Editor
                 {
                     FileInfo fi = new FileInfo(outPath);
                     double sizeMb = fi.Length / (1024.0 * 1024.0);
-                    string msg = $" Google Play AAB Build SUCCESSFUL!\n\nFile: {outPath}\nSize: {sizeMb:F2} MB ({fi.Length:N0} bytes)\nVersion Code: {PlayerSettings.Android.bundleVersionCode}\nVersion Name: {PlayerSettings.bundleVersion}\nPackage: com.nextsem.boxblast2d\nKeystore: boxblast.keystore";
+                    string msg = $"✓ Google Play AAB Build SUCCESSFUL!\n\nFile: {outPath}\nSize: {sizeMb:F2} MB ({fi.Length:N0} bytes)\nVersion Code: {PlayerSettings.Android.bundleVersionCode}\nVersion Name: {PlayerSettings.bundleVersion}\nPackage: com.nextsem.boxblast2d\nKeystore: boxblast.keystore";
                     Debug.Log($"[AndroidBuildScript] {msg}");
 
                     if (!isHeadless)
@@ -164,7 +300,7 @@ namespace BoxBlast.Editor
                 }
                 else
                 {
-                    string err = $" Android AAB Build FAILED with result: {summary.result}. Total errors: {summary.totalErrors}";
+                    string err = $"✗ Android AAB Build FAILED with result: {summary.result}. Total errors: {summary.totalErrors}";
                     Debug.LogError($"[AndroidBuildScript] {err}");
                     if (!isHeadless)
                     {

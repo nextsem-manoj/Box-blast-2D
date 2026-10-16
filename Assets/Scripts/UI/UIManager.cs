@@ -392,15 +392,17 @@ namespace BoxBlast
             }
 
             // 0. Home Button: Top-Left Cyan Crystal Gem Button (Option 2 Design B)
+            float topBtnY = isLandscape ? -(20 + safeTop) : -(36 + safeTop);
+
+            // 0. Top-Left: Home Button (Option 2 Design B)
             if (m_HomeBtnObj != null)
             {
                 RectTransform rt = m_HomeBtnObj.GetComponent<RectTransform>();
                 rt.anchorMin = new Vector2(0f, 1f);
                 rt.anchorMax = new Vector2(0f, 1f);
                 rt.pivot = new Vector2(0f, 1f);
-                float xPos = isLandscape ? (35 + safeLeft) : (38 + safeLeft);
-                float yPos = isLandscape ? -(20 + safeTop) : -(38 + safeTop);
-                rt.anchoredPosition = new Vector2(xPos, yPos);
+                float xPos = isLandscape ? (35 + safeLeft) : (36 + safeLeft);
+                rt.anchoredPosition = new Vector2(xPos, topBtnY);
             }
 
             // 1. Settings Gear: Top-Right Golden Gear Button (Option 2 Design B)
@@ -410,9 +412,8 @@ namespace BoxBlast
                 rt.anchorMin = new Vector2(1f, 1f);
                 rt.anchorMax = new Vector2(1f, 1f);
                 rt.pivot = new Vector2(1f, 1f);
-                float xPos = isLandscape ? -(35 + safeRight) : -(38 + safeRight);
-                float yPos = isLandscape ? -(20 + safeTop) : -(38 + safeTop);
-                rt.anchoredPosition = new Vector2(xPos, yPos);
+                float xPos = isLandscape ? -(35 + safeRight) : -(36 + safeRight);
+                rt.anchoredPosition = new Vector2(xPos, topBtnY);
             }
 
             // 1b. Active Ball Skin Sphere: Beside Settings Gear on Top-Right (Option 2 Design B + Ball Preview)
@@ -422,9 +423,8 @@ namespace BoxBlast
                 rt.anchorMin = new Vector2(1f, 1f);
                 rt.anchorMax = new Vector2(1f, 1f);
                 rt.pivot = new Vector2(1f, 1f);
-                float xPos = isLandscape ? -(132 + safeRight) : -(142 + safeRight);
-                float yPos = isLandscape ? -(20 + safeTop) : -(41 + safeTop);
-                rt.anchoredPosition = new Vector2(xPos, yPos);
+                float xPos = isLandscape ? -(132 + safeRight) : -(138 + safeRight);
+                rt.anchoredPosition = new Vector2(xPos, topBtnY);
             }
 
             // 2. Current Score Hero Plaque with Crown and Best Score ribbon: Top Center (Option 2 Design B)
@@ -672,7 +672,7 @@ namespace BoxBlast
             rt.anchorMin = new Vector2(1f, 1f);
             rt.anchorMax = new Vector2(1f, 1f);
             rt.pivot = new Vector2(1f, 1f);
-            rt.sizeDelta = new Vector2(92f, 92f);
+            rt.sizeDelta = new Vector2(88f, 88f);
 
             // Option 2 (Design B): 3D Golden Gear Cogwheel Settings Button
             Image bg = m_SettingsBtnObj.AddComponent<Image>();
@@ -701,7 +701,7 @@ namespace BoxBlast
             rt.anchorMin = new Vector2(1f, 1f);
             rt.anchorMax = new Vector2(1f, 1f);
             rt.pivot = new Vector2(1f, 1f);
-            rt.sizeDelta = new Vector2(86f, 86f);
+            rt.sizeDelta = new Vector2(88f, 88f);
 
             // 1. Subtle Golden/Cyan Ring Backing matching Option 2 design
             Image ringBg = m_HeaderBallSkinBtnObj.AddComponent<Image>();
@@ -766,7 +766,7 @@ namespace BoxBlast
             rt.anchorMin = new Vector2(0f, 1f);
             rt.anchorMax = new Vector2(0f, 1f);
             rt.pivot = new Vector2(0f, 1f);
-            rt.sizeDelta = new Vector2(92f, 92f);
+            rt.sizeDelta = new Vector2(88f, 88f);
 
             // Option 2 (Design B): 3D Cyan Crystal Gem Button with House Icon
             Image bg = m_HomeBtnObj.AddComponent<Image>();
@@ -2304,9 +2304,11 @@ namespace BoxBlast
             RectTransform rt = m_ModeSelectPanel.AddComponent<RectTransform>();
             rt.anchorMin = Vector2.zero; rt.anchorMax = Vector2.one; rt.sizeDelta = Vector2.zero;
 
-            // Deep cosmic space navy backdrop matching the outer space void (#080b26)
+            // Fullscreen cosmic space backdrop - fills entire screen (0 black bars on any phone or desktop)
             Image panelBg = m_ModeSelectPanel.AddComponent<Image>();
-            panelBg.color = new Color(0.035f, 0.05f, 0.16f, 1f);
+            panelBg.sprite = SpriteFactory.GetHomeBackgroundConcept3Sprite();
+            panelBg.color = Color.white;
+            panelBg.type = Image.Type.Simple;
             panelBg.raycastTarget = true;
 
             // Centered Content Card strictly locked to 1152 x 2048 (0.5625 aspect ratio)
@@ -2366,12 +2368,12 @@ namespace BoxBlast
                 }));
             });
 
-            // 2. Interactive Button: CLASSIC MODE (Placed neatly below Adventure in bottom space)
+            // 2. Interactive Button: CLASSIC MODE (Prominent balanced hierarchy with rich cyan glow)
             GameObject classicBtnObj = new GameObject("Button_Classic");
             classicBtnObj.transform.SetParent(cardObj.transform, false);
             RectTransform clRt = classicBtnObj.AddComponent<RectTransform>();
-            clRt.anchorMin = new Vector2(0.25f, 0.024f);
-            clRt.anchorMax = new Vector2(0.75f, 0.096f);
+            clRt.anchorMin = new Vector2(0.18f, 0.024f);
+            clRt.anchorMax = new Vector2(0.82f, 0.118f);
             clRt.offsetMin = Vector2.zero;
             clRt.offsetMax = Vector2.zero;
 
@@ -2612,13 +2614,19 @@ namespace BoxBlast
             // Safe Area calculations for notch / status bar
             float safeTop = 0f;
             float safeLeft = 0f;
+            float safeBottom = 0f;
+            float safeRight = 0f;
             if (Screen.height > 0 && Screen.width > 0)
             {
                 Rect safeArea = Screen.safeArea;
                 float topPixels = Screen.height - (safeArea.y + safeArea.height);
                 float leftPixels = safeArea.x;
+                float bottomPixels = safeArea.y;
+                float rightPixels = Screen.width - (safeArea.x + safeArea.width);
                 safeTop = (topPixels / Screen.height) * canvasHeight;
                 safeLeft = (leftPixels / Screen.width) * 1080f;
+                safeBottom = (bottomPixels / Screen.height) * canvasHeight;
+                safeRight = (rightPixels / Screen.width) * 1080f;
             }
 
             // 2. Interactive Navigation Buttons directly mapped to the artwork
@@ -2663,6 +2671,8 @@ namespace BoxBlast
             });
 
             // Floating Side Chapter Buttons - Docked at bottom corners away from trail tracks
+            float chBtnY = Mathf.Max(safeBottom + 28f, 38f);
+
             // Left Floating Arrow (Bottom-Left)
             GameObject prevSideObj = new GameObject("PrevChapterSideButton");
             prevSideObj.transform.SetParent(m_LevelSelectPanel.transform, false);
@@ -2670,15 +2680,15 @@ namespace BoxBlast
             m_PrevChapterSideRt.anchorMin = new Vector2(0f, 0f);
             m_PrevChapterSideRt.anchorMax = new Vector2(0f, 0f);
             m_PrevChapterSideRt.pivot = new Vector2(0f, 0f);
-            m_PrevChapterSideRt.anchoredPosition = new Vector2(Mathf.Max(safeLeft + 20f, 26f), 30f);
-            m_PrevChapterSideRt.sizeDelta = new Vector2(130f, 68f);
+            m_PrevChapterSideRt.anchoredPosition = new Vector2(Mathf.Max(safeLeft + 22f, 28f), chBtnY);
+            m_PrevChapterSideRt.sizeDelta = new Vector2(142f, 74f);
 
             Image prevImg = prevSideObj.AddComponent<Image>();
             prevImg.sprite = SpriteFactory.GetHeaderPlaqueSprite(false);
             prevImg.color = Color.white;
             prevImg.raycastTarget = true;
 
-            GameObject prevTxtObj = CreateText(prevSideObj.transform, Vector2.zero, new Vector2(130f, 68f), "◀ CH 1", 21, FontStyle.Bold, new Color(1.0f, 0.88f, 0.35f), TextAnchor.MiddleCenter, m_CandyFont);
+            GameObject prevTxtObj = CreateText(prevSideObj.transform, Vector2.zero, new Vector2(142f, 74f), "◀ CH 1", 22, FontStyle.Bold, new Color(1.0f, 0.88f, 0.35f), TextAnchor.MiddleCenter, m_CandyFont);
             m_PrevChapterSideText = prevTxtObj.GetComponent<Text>();
             MakeTextCrisp(m_PrevChapterSideText, new Color(0.35f, 0.18f, 0.02f, 0.95f), 1.0f);
 
@@ -2707,15 +2717,15 @@ namespace BoxBlast
             m_NextChapterSideRt.anchorMin = new Vector2(1f, 0f);
             m_NextChapterSideRt.anchorMax = new Vector2(1f, 0f);
             m_NextChapterSideRt.pivot = new Vector2(1f, 0f);
-            m_NextChapterSideRt.anchoredPosition = new Vector2(-Mathf.Max(safeLeft + 20f, 26f), 30f);
-            m_NextChapterSideRt.sizeDelta = new Vector2(130f, 68f);
+            m_NextChapterSideRt.anchoredPosition = new Vector2(-Mathf.Max(safeRight + 22f, 28f), chBtnY);
+            m_NextChapterSideRt.sizeDelta = new Vector2(142f, 74f);
 
             Image nextImg = nextSideObj.AddComponent<Image>();
             nextImg.sprite = SpriteFactory.GetHeaderPlaqueSprite(true);
             nextImg.color = Color.white;
             nextImg.raycastTarget = true;
 
-            GameObject nextTxtObj = CreateText(nextSideObj.transform, Vector2.zero, new Vector2(130f, 68f), "CH 2 >", 21, FontStyle.Bold, new Color(1.0f, 0.95f, 0.50f), TextAnchor.MiddleCenter, m_CandyFont);
+            GameObject nextTxtObj = CreateText(nextSideObj.transform, Vector2.zero, new Vector2(142f, 74f), "CH 2 >", 22, FontStyle.Bold, new Color(1.0f, 0.95f, 0.50f), TextAnchor.MiddleCenter, m_CandyFont);
             m_NextChapterSideText = nextTxtObj.GetComponent<Text>();
             MakeTextCrisp(m_NextChapterSideText, new Color(0.40f, 0.20f, 0.02f, 0.95f), 1.0f);
 

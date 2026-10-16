@@ -22,16 +22,16 @@ namespace BoxBlast
 
         private Vector3[] m_PortraitPositionsClassic = new Vector3[]
         {
-            new Vector3(-2.15f, -4.30f, 0f),
+            new Vector3(-2.25f, -4.30f, 0f),
             new Vector3( 0.00f, -4.30f, 0f),
-            new Vector3( 2.15f, -4.30f, 0f)
+            new Vector3( 2.25f, -4.30f, 0f)
         };
 
         private Vector3[] m_PortraitPositionsAdventure = new Vector3[]
         {
-            new Vector3(-2.15f, -4.65f, 0f),
+            new Vector3(-2.25f, -4.65f, 0f),
             new Vector3( 0.00f, -4.65f, 0f),
-            new Vector3( 2.15f, -4.65f, 0f)
+            new Vector3( 2.25f, -4.65f, 0f)
         };
 
         private Vector3[] GetPortraitPositions()
@@ -43,7 +43,7 @@ namespace BoxBlast
         private float GetBowlScale()
         {
             bool isLevel = (LevelManager.Instance != null && LevelManager.Instance.IsLevelActive);
-            return isLevel ? 0.82f : 0.90f;
+            return isLevel ? 0.82f : 0.84f;
         }
 
         private Vector3[] m_CurrentSlotPositions;
