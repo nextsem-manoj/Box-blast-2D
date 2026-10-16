@@ -651,16 +651,16 @@ namespace BoxBlast
             rt.anchorMin = new Vector2(0.5f, 0f);
             rt.anchorMax = new Vector2(0.5f, 0f);
             rt.pivot = new Vector2(0.5f, 0.5f);
-            // Positioned right on the golden ribbon surface of Option 2 Design B (aligned with ribbon)
-            rt.anchoredPosition = new Vector2(18f, 32f);
-            rt.sizeDelta = new Vector2(280f, 44f);
+            // Positioned right on the golden ribbon surface of Option 2 Design B (perfectly centered on ribbon)
+            rt.anchoredPosition = new Vector2(24f, 52f);
+            rt.sizeDelta = new Vector2(250f, 38f);
 
             int best = (GameManager.Instance != null) ? GameManager.Instance.BestScore : 0;
             Font candyFont = (m_CandyFont != null) ? m_CandyFont : m_DefaultFont;
-            GameObject bestObj = CreateText(m_BestScoreObj.transform, Vector2.zero, new Vector2(280f, 44f), $"BEST: {best:N0}", 27, FontStyle.Bold, new Color(0.38f, 0.18f, 0.02f, 1.0f), TextAnchor.MiddleCenter, candyFont);
+            GameObject bestObj = CreateText(m_BestScoreObj.transform, Vector2.zero, new Vector2(250f, 38f), $"BEST: {best:N0}", 24, FontStyle.Bold, new Color(0.35f, 0.16f, 0.01f, 1.0f), TextAnchor.MiddleCenter, candyFont);
             m_BestScoreText = bestObj.GetComponent<Text>();
             // Crisp warm golden embossed highlight shadow underneath
-            MakeTextCrisp(m_BestScoreText, new Color(1.0f, 0.95f, 0.70f, 0.75f), 0.8f);
+            MakeTextCrisp(m_BestScoreText, new Color(1.0f, 0.95f, 0.70f, 0.85f), 0.8f);
         }
 
         private void BuildSettingsButton()
@@ -807,10 +807,10 @@ namespace BoxBlast
             plaqueBg.sprite = SpriteFactory.GetRoyalArchHeaderPlaqueSprite();
             plaqueBg.raycastTarget = false;
 
-            // Big Bold Juicy White Score in the celestial sapphire cavity
+            // Big Bold Juicy White Score centered in the celestial sapphire cavity
             int score = (GameManager.Instance != null) ? GameManager.Instance.CurrentScore : 0;
             Font candyFont = (m_CandyFont != null) ? m_CandyFont : m_DefaultFont;
-            GameObject scoreObj = CreateText(m_ScoreCardObj.transform, new Vector2(0f, 18f), new Vector2(420f, 110f), score.ToString("N0"), 76, FontStyle.Bold, Color.white, TextAnchor.MiddleCenter, candyFont);
+            GameObject scoreObj = CreateText(m_ScoreCardObj.transform, new Vector2(0f, -6f), new Vector2(400f, 100f), score.ToString("N0"), 76, FontStyle.Bold, Color.white, TextAnchor.MiddleCenter, candyFont);
             m_ScoreText = scoreObj.GetComponent<Text>();
             MakeTextCrisp(m_ScoreText, new Color(0.04f, 0.12f, 0.35f, 0.95f), 2.2f);
 
