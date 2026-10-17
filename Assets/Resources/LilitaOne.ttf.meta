@@ -3,10 +3,10 @@ guid: 92e9245b64aa3ec408bd4326dbfea1d7
 TrueTypeFontImporter:
   externalObjects: {}
   serializedVersion: 4
-  fontSize: 64
+  fontSize: 80
   forceTextureCase: -2
   characterSpacing: 0
-  characterPadding: 2
+  characterPadding: 3
   includeFontData: 1
   fontNames:
   - Lilita One

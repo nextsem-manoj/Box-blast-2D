@@ -361,7 +361,7 @@ namespace BoxBlast
                     m_CanvasScaler.referenceResolution = new Vector2(1080, 1920);
                     m_CanvasScaler.matchWidthOrHeight = 0f;
                 }
-                m_CanvasScaler.dynamicPixelsPerUnit = 4.0f;
+                m_CanvasScaler.dynamicPixelsPerUnit = 2.0f;
             }
 
             if (GridManager.Instance != null) GridManager.Instance.UpdateLayout(isLandscape);
@@ -595,13 +595,13 @@ namespace BoxBlast
                 m_CanvasScaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
                 m_CanvasScaler.referenceResolution = new Vector2(1920, 1080);
                 m_CanvasScaler.matchWidthOrHeight = 0.5f;
-                m_CanvasScaler.dynamicPixelsPerUnit = 4.0f;
+                m_CanvasScaler.dynamicPixelsPerUnit = 2.0f;
                 canvasObj.AddComponent<GraphicRaycaster>();
             }
             else
             {
                 m_CanvasScaler = canvas.GetComponent<CanvasScaler>();
-                if (m_CanvasScaler != null) m_CanvasScaler.dynamicPixelsPerUnit = 4.0f;
+                if (m_CanvasScaler != null) m_CanvasScaler.dynamicPixelsPerUnit = 2.0f;
             }
 
             m_RootCanvas = canvas.transform;
@@ -812,7 +812,8 @@ namespace BoxBlast
             Font candyFont = (m_CandyFont != null) ? m_CandyFont : m_DefaultFont;
             GameObject scoreObj = CreateText(m_ScoreCardObj.transform, new Vector2(0f, -6f), new Vector2(400f, 100f), score.ToString("N0"), 76, FontStyle.Bold, Color.white, TextAnchor.MiddleCenter, candyFont);
             m_ScoreText = scoreObj.GetComponent<Text>();
-            MakeTextCrisp(m_ScoreText, new Color(0.04f, 0.12f, 0.35f, 0.95f), 2.2f);
+            m_ScoreText.alignByGeometry = true;
+            MakeTextCrisp(m_ScoreText, new Color(0.04f, 0.12f, 0.35f, 0.95f), 2.0f);
 
             // Combo Notification Popup
             GameObject comboObj = CreateText(m_RootCanvas, new Vector2(0, 280), new Vector2(600, 90), "", 46, FontStyle.Bold, new Color(1.0f, 0.85f, 0.2f), TextAnchor.MiddleCenter);
@@ -1231,7 +1232,10 @@ namespace BoxBlast
         private void OnHomeClicked()
         {
             if (m_SettingsModal != null) m_SettingsModal.SetActive(false);
-            if (LevelManager.Instance != null && LevelManager.Instance.IsLevelActive)
+            HideDefeatModal();
+            HideVictoryModal();
+            HideGameOver();
+            if (LevelManager.Instance != null)
             {
                 LevelManager.Instance.StopLevel();
             }
@@ -2121,32 +2125,64 @@ namespace BoxBlast
             gearRt.anchorMin = new Vector2(0.5f, 1f);
             gearRt.anchorMax = new Vector2(0.5f, 1f);
             gearRt.pivot = new Vector2(0.5f, 0.5f);
-            gearRt.anchoredPosition = new Vector2(462f, -172f);
-            gearRt.sizeDelta = new Vector2(110f, 110f);
+            gearRt.anchoredPosition = new Vector2(411f, -142f);
+            gearRt.sizeDelta = new Vector2(170f, 170f);
             Image gearImg = gearBtnObj.AddComponent<Image>();
-            gearImg.color = new Color(0f, 0f, 0f, 0.001f);
+            gearImg.color = new Color(1f, 1f, 1f, 0.002f);
             gearImg.raycastTarget = true;
-            Button gearBtn = gearBtnObj.AddComponent<Button>();
-            gearBtn.onClick.AddListener(OpenSettings);
 
-            // Interactive 3D Home Button over the header's top-left golden badge
+            GameObject gGlowObj = new GameObject("GearGlowHighlight");
+            gGlowObj.transform.SetParent(gearBtnObj.transform, false);
+            RectTransform ggRt = gGlowObj.AddComponent<RectTransform>();
+            ggRt.anchorMin = Vector2.zero; ggRt.anchorMax = Vector2.one; ggRt.sizeDelta = Vector2.zero;
+            Image ggImg = gGlowObj.AddComponent<Image>();
+            ggImg.sprite = SpriteFactory.GetSoftGlowOrbSprite();
+            ggImg.color = new Color(1f, 0.85f, 0.25f, 0f);
+            ggImg.raycastTarget = false;
+
+            Button gearBtn = gearBtnObj.AddComponent<Button>();
+            gearBtn.transition = Selectable.Transition.None;
+            gearBtn.navigation = new Navigation { mode = Navigation.Mode.None };
+            gearBtn.onClick.AddListener(() =>
+            {
+                if (SoundManager.Instance != null) SoundManager.Instance.PlayButtonClick();
+                HapticManager.TriggerLight();
+                StartCoroutine(AnimateButtonFlash(ggImg, OpenSettings));
+            });
+
+            // Interactive 3D Home Button over the header's top-left cyan crystal badge
             GameObject homeBtnObj = new GameObject("HeaderHomeBtn");
             homeBtnObj.transform.SetParent(m_LevelHUD.transform, false);
             RectTransform homeRt = homeBtnObj.AddComponent<RectTransform>();
             homeRt.anchorMin = new Vector2(0.5f, 1f);
             homeRt.anchorMax = new Vector2(0.5f, 1f);
             homeRt.pivot = new Vector2(0.5f, 0.5f);
-            homeRt.anchoredPosition = new Vector2(-462f, -172f);
-            homeRt.sizeDelta = new Vector2(110f, 110f);
+            homeRt.anchoredPosition = new Vector2(-423f, -125f);
+            homeRt.sizeDelta = new Vector2(170f, 170f);
             Image homeImg = homeBtnObj.AddComponent<Image>();
-            homeImg.color = new Color(0f, 0f, 0f, 0.001f);
+            homeImg.color = new Color(1f, 1f, 1f, 0.002f);
             homeImg.raycastTarget = true;
+
+            GameObject hGlowObj = new GameObject("HomeGlowHighlight");
+            hGlowObj.transform.SetParent(homeBtnObj.transform, false);
+            RectTransform hgRt = hGlowObj.AddComponent<RectTransform>();
+            hgRt.anchorMin = Vector2.zero; hgRt.anchorMax = Vector2.one; hgRt.sizeDelta = Vector2.zero;
+            Image hgImg = hGlowObj.AddComponent<Image>();
+            hgImg.sprite = SpriteFactory.GetSoftGlowOrbSprite();
+            hgImg.color = new Color(0.2f, 0.90f, 1f, 0f);
+            hgImg.raycastTarget = false;
+
             Button homeBtn = homeBtnObj.AddComponent<Button>();
+            homeBtn.transition = Selectable.Transition.None;
+            homeBtn.navigation = new Navigation { mode = Navigation.Mode.None };
             homeBtn.onClick.AddListener(() =>
             {
                 if (SoundManager.Instance != null) SoundManager.Instance.PlayButtonClick();
                 HapticManager.TriggerLight();
-                OnHomeClicked();
+                StartCoroutine(AnimateButtonFlash(hgImg, () =>
+                {
+                    OnHomeClicked();
+                }));
             });
 
             Font hudFont = (m_CandyFont != null) ? m_CandyFont : ((m_HudCleanFont != null) ? m_HudCleanFont : m_DefaultFont);
@@ -2294,6 +2330,10 @@ namespace BoxBlast
             }
             m_GemObjectivesBar.SetActive(false);
 
+            // Ensure interactive header buttons sit at the top of the hierarchy inside m_LevelHUD
+            homeBtnObj.transform.SetAsLastSibling();
+            gearBtnObj.transform.SetAsLastSibling();
+
             m_LevelHUD.SetActive(false);
         }
 
@@ -2307,11 +2347,11 @@ namespace BoxBlast
             // Fullscreen cosmic space backdrop - fills entire screen (0 black bars on any phone or desktop)
             Image panelBg = m_ModeSelectPanel.AddComponent<Image>();
             panelBg.sprite = null;
-            panelBg.color = new Color(0.035f, 0.055f, 0.16f, 1f); // Seamless deep space cosmic navy matching artwork edges
+            panelBg.color = new Color(0.015f, 0.048f, 0.24f, 1f); // Seamless deep space cosmic navy matching artwork edges exactly
             panelBg.type = Image.Type.Simple;
             panelBg.raycastTarget = true;
 
-            // Centered Content Card strictly locked to 1152 x 2048 (0.5625 aspect ratio)
+            // Centered Content Card strictly locked to 1152 x 2064 (0.55814 aspect ratio)
             // This mathematically guarantees all 8 element spheres, the central star halo,
             // and the golden cosmic ring remain 100% PERFECT CIRCLES on any screen!
             GameObject cardObj = new GameObject("HomeContentCard");
@@ -2323,9 +2363,9 @@ namespace BoxBlast
 
             AspectRatioFitter arf = cardObj.AddComponent<AspectRatioFitter>();
             arf.aspectMode = AspectRatioFitter.AspectMode.FitInParent;
-            arf.aspectRatio = 1152f / 2048f; // 0.5625f exact master artwork aspect ratio
+            arf.aspectRatio = 1152f / 2064f; // 0.55814f exact master artwork aspect ratio
 
-            // Concept 3 Master 3D Artwork (Ball Blast crown, 8 element spheres, rainbow star, 3D Adventure button)
+            // Concept 3 Master 3D Artwork (Ball Blast crown, 8 element spheres, rainbow star, 3D Adventure & Classic buttons)
             Image bg = cardObj.AddComponent<Image>();
             bg.sprite = SpriteFactory.GetHomeBackgroundConcept3Sprite();
             bg.color = Color.white;
@@ -2336,8 +2376,8 @@ namespace BoxBlast
             GameObject advBtnObj = new GameObject("Button_Adventure");
             advBtnObj.transform.SetParent(cardObj.transform, false);
             RectTransform advRt = advBtnObj.AddComponent<RectTransform>();
-            advRt.anchorMin = new Vector2(0.145f, 0.130f);
-            advRt.anchorMax = new Vector2(0.855f, 0.235f);
+            advRt.anchorMin = new Vector2(0.150f, 0.125f);
+            advRt.anchorMax = new Vector2(0.895f, 0.275f);
             advRt.offsetMin = Vector2.zero;
             advRt.offsetMax = Vector2.zero;
 
@@ -2368,28 +2408,27 @@ namespace BoxBlast
                 }));
             });
 
-            // 2. Interactive Button: CLASSIC MODE (Prominent balanced hierarchy with rich cyan glow)
+            // 2. Interactive Button: CLASSIC MODE (Directly over the painted 3D Royal Sapphire button)
             GameObject classicBtnObj = new GameObject("Button_Classic");
             classicBtnObj.transform.SetParent(cardObj.transform, false);
             RectTransform clRt = classicBtnObj.AddComponent<RectTransform>();
-            clRt.anchorMin = new Vector2(0.18f, 0.024f);
-            clRt.anchorMax = new Vector2(0.82f, 0.118f);
+            clRt.anchorMin = new Vector2(0.125f, 0.015f);
+            clRt.anchorMax = new Vector2(0.895f, 0.130f);
             clRt.offsetMin = Vector2.zero;
             clRt.offsetMax = Vector2.zero;
 
             Image clImg = classicBtnObj.AddComponent<Image>();
-            clImg.sprite = SpriteFactory.GetClassic3DButtonSprite();
-            clImg.preserveAspect = true;
+            clImg.color = Color.clear;
             clImg.raycastTarget = true;
 
-            // Cyan Glow Highlight on tap
+            // Royal Sapphire Glow Highlight on tap
             GameObject clGlowObj = new GameObject("ClassicGlowHighlight");
             clGlowObj.transform.SetParent(classicBtnObj.transform, false);
             RectTransform cgRt = clGlowObj.AddComponent<RectTransform>();
             cgRt.anchorMin = Vector2.zero; cgRt.anchorMax = Vector2.one; cgRt.sizeDelta = Vector2.zero;
             Image cgImg = clGlowObj.AddComponent<Image>();
             cgImg.sprite = SpriteFactory.GetPillSprite(Color.white);
-            cgImg.color = new Color(0.20f, 0.90f, 1.0f, 0f);
+            cgImg.color = new Color(0.30f, 0.65f, 1.0f, 0f);
             cgImg.raycastTarget = false;
 
             Button clBtn = classicBtnObj.AddComponent<Button>();
@@ -2413,8 +2452,8 @@ namespace BoxBlast
             GameObject settingsBtnObj = new GameObject("Button_Settings");
             settingsBtnObj.transform.SetParent(cardObj.transform, false);
             RectTransform stRt = settingsBtnObj.AddComponent<RectTransform>();
-            stRt.anchorMin = new Vector2(0.825f, 0.865f);
-            stRt.anchorMax = new Vector2(0.985f, 0.955f);
+            stRt.anchorMin = new Vector2(0.805f, 0.840f);
+            stRt.anchorMax = new Vector2(0.980f, 0.960f);
             stRt.offsetMin = Vector2.zero;
             stRt.offsetMax = Vector2.zero;
 
@@ -2445,8 +2484,8 @@ namespace BoxBlast
             GameObject wardrobeBtnObj = new GameObject("Button_Wardrobe");
             wardrobeBtnObj.transform.SetParent(cardObj.transform, false);
             RectTransform wdRt = wardrobeBtnObj.AddComponent<RectTransform>();
-            wdRt.anchorMin = new Vector2(0.015f, 0.865f);
-            wdRt.anchorMax = new Vector2(0.175f, 0.955f);
+            wdRt.anchorMin = new Vector2(0.014f, 0.840f);
+            wdRt.anchorMax = new Vector2(0.249f, 0.964f);
             wdRt.offsetMin = Vector2.zero;
             wdRt.offsetMax = Vector2.zero;
             m_HomeBallDesignsPillRt = wdRt;
