@@ -1148,6 +1148,26 @@ namespace BoxBlast
             // 8. Home Button (X: 0, Y: -293, Size: 404 x 82)
             CreateConcept2Button(sceneObj.transform, new Vector2(0, -293), new Vector2(404, 82), "Settings_Btn_Home", OnHomeClicked);
 
+            // 9. How To Play / Guide Button (X: 0, Y: -385, Size: 404 x 76)
+            GameObject guideBtnObj = new GameObject("Settings_Btn_HowToPlay");
+            guideBtnObj.transform.SetParent(sceneObj.transform, false);
+            RectTransform gbRt = guideBtnObj.AddComponent<RectTransform>();
+            gbRt.anchoredPosition = new Vector2(0f, -385f);
+            gbRt.sizeDelta = new Vector2(404f, 76f);
+            Image gbImg = guideBtnObj.AddComponent<Image>();
+            gbImg.sprite = SpriteFactory.GetRoundedButtonSprite(new Color(0.12f, 0.45f, 0.95f), new Color(0.04f, 0.18f, 0.50f), 0.18f);
+            Button gbBtn = guideBtnObj.AddComponent<Button>();
+            gbBtn.onClick.AddListener(() =>
+            {
+                if (SoundManager.Instance != null) SoundManager.Instance.PlayButtonClick();
+                HapticManager.TriggerLight();
+                if (m_SettingsModal != null) m_SettingsModal.SetActive(false);
+                ShowHomeFeatureTour(force: true);
+            });
+            Font font = (m_CandyFont != null) ? m_CandyFont : m_DefaultFont;
+            GameObject gbTxtObj = CreateText(guideBtnObj.transform, Vector2.zero, new Vector2(380f, 60f), "❓ HOW TO PLAY GUIDE", 24, FontStyle.Bold, Color.white, TextAnchor.MiddleCenter, font);
+            MakeTextCrisp(gbTxtObj.GetComponent<Text>(), new Color(0.02f, 0.08f, 0.25f, 0.95f), 1.0f);
+
             RefreshSettingsUI();
             m_SettingsModal.SetActive(false);
         }
@@ -1511,6 +1531,11 @@ namespace BoxBlast
                 m_ModeSelectPanel.transform.SetAsLastSibling();
             }
             UpdateHUDVisibility();
+
+            if (PlayerPrefs.GetInt("BoxBlast_HomeTour_Seen", 0) == 0)
+            {
+                StartCoroutine(DelayedShowHomeTour(0.35f));
+            }
         }
 
         public int GetTotalModeStars(GameModeType mode)
@@ -5012,6 +5037,252 @@ namespace BoxBlast
                 }
                 yield return new WaitForSecondsRealtime(0.20f);
             }
+        }
+
+        // ==========================================
+        // 🌟 FIRST-TIME HOME FEATURE GUIDED TOUR (FTUE)
+        // ==========================================
+        private GameObject m_HomeTourModalObj;
+        private int m_CurrentTourStep = 0;
+        private Text m_TourStepBadgeText;
+        private Text m_TourTitleText;
+        private Text m_TourDescText;
+        private Image m_TourIconImg;
+        private Text m_TourNextBtnText;
+        private RectTransform m_TourHandRt;
+        private Coroutine m_TourHandCoroutine;
+
+        public void ShowHomeFeatureTour(bool force = false)
+        {
+            if (!force && PlayerPrefs.GetInt("BoxBlast_HomeTour_Seen", 0) == 1) return;
+
+            if (m_HomeTourModalObj == null)
+            {
+                BuildHomeFeatureTourModal();
+            }
+
+            if (m_HomeTourModalObj == null) return;
+
+            m_CurrentTourStep = 0;
+            m_HomeTourModalObj.SetActive(true);
+            m_HomeTourModalObj.transform.SetAsLastSibling();
+            UpdateTourStepUI();
+
+            if (SoundManager.Instance != null) SoundManager.Instance.PlayTutorialPrompt();
+            HapticManager.TriggerLight();
+        }
+
+        private System.Collections.IEnumerator DelayedShowHomeTour(float delay)
+        {
+            yield return new WaitForSecondsRealtime(delay);
+            if (m_ModeSelectPanel != null && m_ModeSelectPanel.activeSelf)
+            {
+                ShowHomeFeatureTour(false);
+            }
+        }
+
+        private void BuildHomeFeatureTourModal()
+        {
+            if (m_HomeTourModalObj != null) return;
+
+            m_HomeTourModalObj = new GameObject("HomeFeatureTourModal", typeof(RectTransform));
+            m_HomeTourModalObj.transform.SetParent(m_RootCanvas, false);
+            RectTransform rt = m_HomeTourModalObj.GetComponent<RectTransform>();
+            rt.anchorMin = Vector2.zero;
+            rt.anchorMax = Vector2.one;
+            rt.sizeDelta = Vector2.zero;
+
+            // Semi-transparent dark cosmic backdrop
+            Image bg = m_HomeTourModalObj.AddComponent<Image>();
+            bg.color = new Color(0.02f, 0.05f, 0.15f, 0.82f);
+            bg.raycastTarget = true; // Blocks clicks behind while tour is active
+
+            // Main Tour Card (680 x 520)
+            GameObject cardObj = new GameObject("TourCard", typeof(RectTransform));
+            cardObj.transform.SetParent(m_HomeTourModalObj.transform, false);
+            RectTransform cRt = cardObj.GetComponent<RectTransform>();
+            cRt.anchorMin = new Vector2(0.5f, 0.5f);
+            cRt.anchorMax = new Vector2(0.5f, 0.5f);
+            cRt.pivot = new Vector2(0.5f, 0.5f);
+            cRt.anchoredPosition = new Vector2(0f, 40f);
+            cRt.sizeDelta = new Vector2(680f, 520f);
+
+            Image cardBg = cardObj.AddComponent<Image>();
+            cardBg.sprite = SpriteFactory.GetRoundedButtonSprite(new Color(0.08f, 0.16f, 0.38f, 0.98f), new Color(0.18f, 0.42f, 0.85f, 1f), 0.16f);
+            cardBg.type = Image.Type.Sliced;
+
+            Font font = (m_CandyFont != null) ? m_CandyFont : m_DefaultFont;
+
+            // Step Badge Pill at top of Card (X: 0, Y: 215)
+            GameObject badgeObj = new GameObject("StepBadge");
+            badgeObj.transform.SetParent(cardObj.transform, false);
+            RectTransform bRt = badgeObj.AddComponent<RectTransform>();
+            bRt.anchoredPosition = new Vector2(0f, 215f);
+            bRt.sizeDelta = new Vector2(220f, 48f);
+            Image bImg = badgeObj.AddComponent<Image>();
+            bImg.sprite = SpriteFactory.Get3DPillBadgeSprite(new Color(0.98f, 0.72f, 0.15f), new Color(0.55f, 0.28f, 0.02f));
+            bImg.type = Image.Type.Sliced;
+            GameObject bTxtObj = CreateText(badgeObj.transform, Vector2.zero, new Vector2(210f, 44f), "STEP 1 OF 4", 20, FontStyle.Bold, Color.white, TextAnchor.MiddleCenter, font);
+            m_TourStepBadgeText = bTxtObj.GetComponent<Text>();
+            MakeTextCrisp(m_TourStepBadgeText, new Color(0.35f, 0.15f, 0.02f, 0.95f), 1.0f);
+
+            // Close / Skip Button at top-right of Card (X: 285, Y: 215)
+            GameObject skipBtnObj = new GameObject("SkipBtn");
+            skipBtnObj.transform.SetParent(cardObj.transform, false);
+            RectTransform sRt = skipBtnObj.AddComponent<RectTransform>();
+            sRt.anchoredPosition = new Vector2(285f, 215f);
+            sRt.sizeDelta = new Vector2(90f, 44f);
+            Image sBg = skipBtnObj.AddComponent<Image>();
+            sBg.sprite = SpriteFactory.GetRoundedButtonSprite(new Color(0.25f, 0.30f, 0.45f, 0.8f), new Color(0.12f, 0.15f, 0.25f, 1f), 0.2f);
+            Button sBtn = skipBtnObj.AddComponent<Button>();
+            sBtn.onClick.AddListener(CloseHomeTour);
+            GameObject sTxtObj = CreateText(skipBtnObj.transform, Vector2.zero, new Vector2(80f, 40f), "SKIP", 18, FontStyle.Bold, new Color(0.85f, 0.90f, 1f), TextAnchor.MiddleCenter, font);
+            MakeTextCrisp(sTxtObj.GetComponent<Text>(), new Color(0.05f, 0.08f, 0.18f, 0.9f), 0.8f);
+
+            // Big 3D Icon (X: 0, Y: 115, Size: 96 x 96)
+            GameObject iconObj = new GameObject("TourIcon");
+            iconObj.transform.SetParent(cardObj.transform, false);
+            RectTransform iRt = iconObj.AddComponent<RectTransform>();
+            iRt.anchoredPosition = new Vector2(0f, 115f);
+            iRt.sizeDelta = new Vector2(96f, 96f);
+            m_TourIconImg = iconObj.AddComponent<Image>();
+            m_TourIconImg.sprite = GemIconFactory.GetGemSprite(GemType.YellowStar);
+            m_TourIconImg.raycastTarget = false;
+
+            // Title Text (X: 0, Y: 35)
+            GameObject titleObj = CreateText(cardObj.transform, new Vector2(0f, 35f), new Vector2(620f, 60f), "HOW TO PLAY: BLOCK BLAST", 28, FontStyle.Bold, Color.white, TextAnchor.MiddleCenter, font);
+            m_TourTitleText = titleObj.GetComponent<Text>();
+            m_TourTitleText.resizeTextForBestFit = true;
+            m_TourTitleText.resizeTextMinSize = 20;
+            m_TourTitleText.resizeTextMaxSize = 28;
+            MakeTextCrisp(m_TourTitleText, new Color(0.01f, 0.05f, 0.18f, 0.95f), 1.1f);
+
+            // Description Text Box (X: 0, Y: -65, Size: 580 x 140)
+            GameObject descObj = CreateText(cardObj.transform, new Vector2(0f, -65f), new Vector2(580f, 130f), "Description goes here...", 22, FontStyle.Normal, new Color(0.88f, 0.94f, 1f), TextAnchor.MiddleCenter, font);
+            m_TourDescText = descObj.GetComponent<Text>();
+            m_TourDescText.resizeTextForBestFit = true;
+            m_TourDescText.resizeTextMinSize = 18;
+            m_TourDescText.resizeTextMaxSize = 22;
+            m_TourDescText.lineSpacing = 1.15f;
+            MakeTextCrisp(m_TourDescText, new Color(0.02f, 0.06f, 0.18f, 0.95f), 0.9f);
+
+            // Bottom NEXT Button (X: 0, Y: -185, Size: 320 x 74)
+            GameObject nextBtnObj = new GameObject("TourNextBtn");
+            nextBtnObj.transform.SetParent(cardObj.transform, false);
+            RectTransform nRt = nextBtnObj.AddComponent<RectTransform>();
+            nRt.anchoredPosition = new Vector2(0f, -185f);
+            nRt.sizeDelta = new Vector2(320f, 74f);
+            Image nBg = nextBtnObj.AddComponent<Image>();
+            nBg.sprite = SpriteFactory.GetRoundedButtonSprite(new Color(0.98f, 0.72f, 0.15f), new Color(0.55f, 0.28f, 0.02f), 0.18f);
+            Button nBtn = nextBtnObj.AddComponent<Button>();
+            nBtn.onClick.AddListener(OnTourNextClicked);
+            GameObject nTxtObj = CreateText(nextBtnObj.transform, Vector2.zero, new Vector2(300f, 65f), "NEXT ➜", 28, FontStyle.Bold, Color.white, TextAnchor.MiddleCenter, font);
+            m_TourNextBtnText = nTxtObj.GetComponent<Text>();
+            MakeTextCrisp(m_TourNextBtnText, new Color(0.35f, 0.15f, 0.02f, 0.95f), 1.1f);
+
+            // Animated Pointing Hand Floating Indicator
+            GameObject handObj = new GameObject("TourHand");
+            handObj.transform.SetParent(m_HomeTourModalObj.transform, false);
+            m_TourHandRt = handObj.AddComponent<RectTransform>();
+            m_TourHandRt.sizeDelta = new Vector2(100f, 100f);
+            m_TourHandRt.pivot = new Vector2(0.38f, 0.88f);
+            Image hImg = handObj.AddComponent<Image>();
+            hImg.sprite = GemIconFactory.GetTutorialHandSprite();
+            hImg.raycastTarget = false;
+
+            m_HomeTourModalObj.SetActive(false);
+        }
+
+        private void UpdateTourStepUI()
+        {
+            if (m_TourStepBadgeText != null) m_TourStepBadgeText.text = $"STEP {m_CurrentTourStep + 1} OF 4";
+
+            Vector2 targetHandPos = Vector2.zero;
+
+            switch (m_CurrentTourStep)
+            {
+                case 0: // 🎮 Gameplay Basics
+                    if (m_TourTitleText != null) m_TourTitleText.text = "🎮 HOW TO PLAY: BLOCK BLAST";
+                    if (m_TourDescText != null) m_TourDescText.text = "Drag shapes from the dock onto the 8×8 grid!\n\nFill complete rows or columns to BLAST lines, clear space, and collect starry points!";
+                    if (m_TourIconImg != null) m_TourIconImg.sprite = GemIconFactory.GetGemSprite(GemType.YellowStar);
+                    if (m_TourNextBtnText != null) m_TourNextBtnText.text = "NEXT ➜";
+                    targetHandPos = new Vector2(0f, -220f);
+                    break;
+
+                case 1: // 🏆 Classic Mode & Best Score
+                    if (m_TourTitleText != null) m_TourTitleText.text = "🏆 CLASSIC MODE & BEST SCORE";
+                    if (m_TourDescText != null) m_TourDescText.text = "Play endless rounds without move limits!\n\nYour all-time BEST SCORE is always tracked right on the Classic card badge!";
+                    if (m_TourIconImg != null) m_TourIconImg.sprite = Resources.Load<Sprite>("ChubbyGoldenCrownHD") ?? GemIconFactory.GetGemSprite(GemType.RedRuby);
+                    if (m_TourNextBtnText != null) m_TourNextBtnText.text = "NEXT ➜";
+                    targetHandPos = new Vector2(-190f, -260f);
+                    break;
+
+                case 2: // 🗺️ Adventure Mode & 40 Levels
+                    if (m_TourTitleText != null) m_TourTitleText.text = "🗺️ ADVENTURE GALAXY MAP";
+                    if (m_TourDescText != null) m_TourDescText.text = "Tap Adventure Mode to journey through 40 levels!\n\nCollect target gems (Rubies, Diamonds, Stars) to unlock treasure chests and earn stars!";
+                    if (m_TourIconImg != null) m_TourIconImg.sprite = GemIconFactory.GetGemSprite(GemType.BlueDiamond);
+                    if (m_TourNextBtnText != null) m_TourNextBtnText.text = "NEXT ➜";
+                    targetHandPos = new Vector2(190f, -260f);
+                    break;
+
+                case 3: // 🎨 Ball Wardrobe & Skins
+                    if (m_TourTitleText != null) m_TourTitleText.text = "🎨 3D BALL WARDROBE";
+                    if (m_TourDescText != null) m_TourDescText.text = "Tap the Ball Sphere icon on the top-right anytime!\n\nUnlock and equip epic 3D candy balls, cosmic swirls, and planet designs!";
+                    if (m_TourIconImg != null) m_TourIconImg.sprite = GemIconFactory.GetGemSprite(GemType.OrangePentagon);
+                    if (m_TourNextBtnText != null) m_TourNextBtnText.text = "LET'S PLAY! 🚀";
+                    targetHandPos = new Vector2(260f, 380f);
+                    break;
+            }
+
+            if (m_TourHandCoroutine != null) StopCoroutine(m_TourHandCoroutine);
+            m_TourHandCoroutine = StartCoroutine(AnimateTourHandBounce(targetHandPos));
+        }
+
+        private System.Collections.IEnumerator AnimateTourHandBounce(Vector2 targetPos)
+        {
+            if (m_TourHandRt == null) yield break;
+            while (m_HomeTourModalObj != null && m_HomeTourModalObj.activeSelf)
+            {
+                float t = Time.unscaledTime * 3.5f;
+                float bounce = Mathf.Sin(t) * 16f;
+                m_TourHandRt.anchoredPosition = targetPos + new Vector2(bounce * 0.7f, -bounce * 0.7f);
+                yield return null;
+            }
+        }
+
+        private void OnTourNextClicked()
+        {
+            if (SoundManager.Instance != null) SoundManager.Instance.PlayButtonClick();
+            HapticManager.TriggerLight();
+
+            m_CurrentTourStep++;
+            if (m_CurrentTourStep >= 4)
+            {
+                CloseHomeTour();
+                FloatingText.CreateBadge(Vector3.up * 0.5f, "🚀 HAVE FUN PLAYING!", Color.white, new Color(0.12f, 0.65f, 0.35f));
+                if (SoundManager.Instance != null) SoundManager.Instance.PlayAchievement();
+            }
+            else
+            {
+                UpdateTourStepUI();
+            }
+        }
+
+        private void CloseHomeTour()
+        {
+            if (m_TourHandCoroutine != null)
+            {
+                StopCoroutine(m_TourHandCoroutine);
+                m_TourHandCoroutine = null;
+            }
+
+            if (m_HomeTourModalObj != null)
+            {
+                m_HomeTourModalObj.SetActive(false);
+            }
+
+            PlayerPrefs.SetInt("BoxBlast_HomeTour_Seen", 1);
+            PlayerPrefs.Save();
         }
 
         // ==========================================
