@@ -2150,10 +2150,11 @@ namespace BoxBlast
             gearRt.anchorMin = new Vector2(0.5f, 1f);
             gearRt.anchorMax = new Vector2(0.5f, 1f);
             gearRt.pivot = new Vector2(0.5f, 0.5f);
-            gearRt.anchoredPosition = new Vector2(411f, -142f);
-            gearRt.sizeDelta = new Vector2(170f, 170f);
+            gearRt.anchoredPosition = new Vector2(423f, -125f);
+            gearRt.sizeDelta = new Vector2(140f, 140f);
             Image gearImg = gearBtnObj.AddComponent<Image>();
-            gearImg.color = new Color(1f, 1f, 1f, 0.002f);
+            gearImg.sprite = SpriteFactory.GetGoldenGearSettingsButtonSprite();
+            gearImg.color = Color.white;
             gearImg.raycastTarget = true;
 
             GameObject gGlowObj = new GameObject("GearGlowHighlight");
@@ -2172,7 +2173,7 @@ namespace BoxBlast
             {
                 if (SoundManager.Instance != null) SoundManager.Instance.PlayButtonClick();
                 HapticManager.TriggerLight();
-                StartCoroutine(AnimateButtonFlash(ggImg, OpenSettings));
+                StartCoroutine(AnimateButtonPress(gearRt, OpenSettings));
             });
 
             // Interactive 3D Home Button over the header's top-left cyan crystal badge
@@ -2183,9 +2184,10 @@ namespace BoxBlast
             homeRt.anchorMax = new Vector2(0.5f, 1f);
             homeRt.pivot = new Vector2(0.5f, 0.5f);
             homeRt.anchoredPosition = new Vector2(-423f, -125f);
-            homeRt.sizeDelta = new Vector2(170f, 170f);
+            homeRt.sizeDelta = new Vector2(140f, 140f);
             Image homeImg = homeBtnObj.AddComponent<Image>();
-            homeImg.color = new Color(1f, 1f, 1f, 0.002f);
+            homeImg.sprite = SpriteFactory.GetCyanCrystalHomeButtonSprite();
+            homeImg.color = Color.white;
             homeImg.raycastTarget = true;
 
             GameObject hGlowObj = new GameObject("HomeGlowHighlight");
@@ -2204,7 +2206,7 @@ namespace BoxBlast
             {
                 if (SoundManager.Instance != null) SoundManager.Instance.PlayButtonClick();
                 HapticManager.TriggerLight();
-                StartCoroutine(AnimateButtonFlash(hgImg, () =>
+                StartCoroutine(AnimateButtonPress(homeRt, () =>
                 {
                     OnHomeClicked();
                 }));
