@@ -129,6 +129,7 @@ namespace BoxBlast
         private Text m_LevelSelectStarsText;
         private RectTransform m_LevelSelectStarsRt;
         private RectTransform m_LevelSelectWardrobeRt;
+        private RectTransform m_LevelSelectTrailTitleRt;
         private Image m_LevelSelectStarsPillImg;
         private Text m_ModeCardAdvStarsText;
         private Text m_ModeCardEventStarsText;
@@ -2814,12 +2815,12 @@ namespace BoxBlast
             // Top Royal Golden Crown Ribbon Title: "ADVENTURE TRAIL"
             GameObject trailTitleObj = new GameObject("AdventureTrailTitle");
             trailTitleObj.transform.SetParent(m_LevelSelectPanel.transform, false);
-            RectTransform ttRt = trailTitleObj.AddComponent<RectTransform>();
-            ttRt.anchorMin = new Vector2(0.5f, 1f);
-            ttRt.anchorMax = new Vector2(0.5f, 1f);
-            ttRt.pivot = new Vector2(0.5f, 0.5f);
-            ttRt.anchoredPosition = new Vector2(0f, -canvasHeight * (255f / 1376f));
-            ttRt.sizeDelta = new Vector2(650f, 95f);
+            m_LevelSelectTrailTitleRt = trailTitleObj.AddComponent<RectTransform>();
+            m_LevelSelectTrailTitleRt.anchorMin = new Vector2(0.5f, 1f);
+            m_LevelSelectTrailTitleRt.anchorMax = new Vector2(0.5f, 1f);
+            m_LevelSelectTrailTitleRt.pivot = new Vector2(0.5f, 0.5f);
+            m_LevelSelectTrailTitleRt.anchoredPosition = new Vector2(0f, -canvasHeight * (320f / 1376f));
+            m_LevelSelectTrailTitleRt.sizeDelta = new Vector2(650f, 95f);
 
             Font titleFont = (m_CandyFont != null) ? m_CandyFont : m_DefaultFont;
             GameObject ttTextObj = CreateText(trailTitleObj.transform, Vector2.zero, new Vector2(650f, 95f), "ADVENTURE TRAIL", 48, FontStyle.Bold, new Color(0.35f, 0.16f, 0.01f, 1f), TextAnchor.MiddleCenter, titleFont);
@@ -2914,6 +2915,11 @@ namespace BoxBlast
             }
             float scaleY = canvasHeight / 1920f;
 
+            if (m_LevelSelectTrailTitleRt != null)
+            {
+                m_LevelSelectTrailTitleRt.pivot = new Vector2(0.5f, 0.5f);
+                m_LevelSelectTrailTitleRt.anchoredPosition = new Vector2(0f, -canvasHeight * (320f / 1376f));
+            }
             if (m_LevelSelectStarsRt != null)
             {
                 m_LevelSelectStarsRt.pivot = new Vector2(0.5f, 0.5f);
