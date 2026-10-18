@@ -2696,28 +2696,25 @@ namespace BoxBlast
             }
 
             // 2. Interactive Navigation Buttons directly mapped to the artwork
-            // A. Back Button (< HOME) - Anchored to Top-Left with generous touch target & safe area
+            // A. Back Button (3D Cyan Crystal Home Button) - Anchored to Top-Left with safe area
             GameObject backBtn = new GameObject("BackButton");
             backBtn.transform.SetParent(m_LevelSelectPanel.transform, false);
             RectTransform bbRt = backBtn.AddComponent<RectTransform>();
             bbRt.anchorMin = new Vector2(0f, 1f);
             bbRt.anchorMax = new Vector2(0f, 1f);
             bbRt.pivot = new Vector2(0f, 1f);
-            float homeLeft = Mathf.Max(safeLeft + 15f, 25f);
-            float homeTop = Mathf.Max(safeTop + 10f, 79f * scaleY - 45f);
+            float homeLeft = Mathf.Max(safeLeft + 35f, 36f);
+            float homeTop = Mathf.Max(safeTop + 35f, 36f);
             bbRt.anchoredPosition = new Vector2(homeLeft, -homeTop);
-            bbRt.sizeDelta = new Vector2(250f, 105f);
+            bbRt.sizeDelta = new Vector2(96f, 96f);
 
             Image bbImg = backBtn.AddComponent<Image>();
-            bbImg.color = new Color(1f, 1f, 1f, 0.001f);
+            bbImg.sprite = SpriteFactory.GetCyanCrystalHomeButtonSprite();
+            bbImg.color = Color.white;
             bbImg.raycastTarget = true;
 
             Button bbComp = backBtn.AddComponent<Button>();
-            ColorBlock bcb = bbComp.colors;
-            bcb.normalColor = new Color(1f, 1f, 1f, 0.001f);
-            bcb.highlightedColor = new Color(0.12f, 0.88f, 0.78f, 0.25f);
-            bcb.pressedColor = new Color(0.12f, 0.88f, 0.78f, 0.45f);
-            bbComp.colors = bcb;
+            bbComp.targetGraphic = bbImg;
 
             bbComp.onClick.AddListener(() =>
             {
