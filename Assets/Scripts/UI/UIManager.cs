@@ -2811,45 +2811,81 @@ namespace BoxBlast
                 }
             });
 
-            // B. Ball Designs Button (Wardrobe)
+            // Top Royal Golden Crown Ribbon Title: "ADVENTURE TRAIL"
+            GameObject trailTitleObj = new GameObject("AdventureTrailTitle");
+            trailTitleObj.transform.SetParent(m_LevelSelectPanel.transform, false);
+            RectTransform ttRt = trailTitleObj.AddComponent<RectTransform>();
+            ttRt.anchorMin = new Vector2(0.5f, 1f);
+            ttRt.anchorMax = new Vector2(0.5f, 1f);
+            ttRt.pivot = new Vector2(0.5f, 0.5f);
+            ttRt.anchoredPosition = new Vector2(0f, -canvasHeight * (255f / 1376f));
+            ttRt.sizeDelta = new Vector2(650f, 95f);
+
+            Font titleFont = (m_CandyFont != null) ? m_CandyFont : m_DefaultFont;
+            GameObject ttTextObj = CreateText(trailTitleObj.transform, Vector2.zero, new Vector2(650f, 95f), "ADVENTURE TRAIL", 48, FontStyle.Bold, new Color(0.35f, 0.16f, 0.01f, 1f), TextAnchor.MiddleCenter, titleFont);
+            Text ttText = ttTextObj.GetComponent<Text>();
+            ttText.resizeTextForBestFit = true;
+            ttText.resizeTextMinSize = 32;
+            ttText.resizeTextMaxSize = 52;
+            MakeTextCrisp(ttText, new Color(1.0f, 0.95f, 0.65f, 0.95f), 1.2f);
+
+            // B. Ball Designs Button (Purple Royal pill with Wardrobe action)
             GameObject wardrobeBtn = new GameObject("WardrobeButton");
             wardrobeBtn.transform.SetParent(m_LevelSelectPanel.transform, false);
             m_LevelSelectWardrobeRt = wardrobeBtn.AddComponent<RectTransform>();
             m_LevelSelectWardrobeRt.anchorMin = new Vector2(0.5f, 1f);
             m_LevelSelectWardrobeRt.anchorMax = new Vector2(0.5f, 1f);
-            m_LevelSelectWardrobeRt.pivot = new Vector2(0.5f, 1f);
-            m_LevelSelectWardrobeRt.anchoredPosition = new Vector2(130.8f, -canvasHeight * (362.5f / 1376f));
-            m_LevelSelectWardrobeRt.sizeDelta = new Vector2(235f, 52f);
+            m_LevelSelectWardrobeRt.pivot = new Vector2(0.5f, 0.5f);
+            m_LevelSelectWardrobeRt.anchoredPosition = new Vector2(128f, -canvasHeight * (362f / 1376f));
+            m_LevelSelectWardrobeRt.sizeDelta = new Vector2(230f, 50f);
+
             Image wbImg = wardrobeBtn.AddComponent<Image>();
-            wbImg.color = new Color(1f, 1f, 1f, 0.001f);
+            wbImg.sprite = SpriteFactory.GetPanelSprite(new Color(0.32f, 0.08f, 0.46f, 0.92f), new Color(0.85f, 0.50f, 1.0f, 0.95f), 2f, 20);
             wbImg.raycastTarget = true;
+
+            GameObject wbTxtObj = CreateText(wardrobeBtn.transform, Vector2.zero, new Vector2(220f, 44f), "BALL DESIGNS", 22, FontStyle.Bold, Color.white, TextAnchor.MiddleCenter, titleFont);
+            Text wbText = wbTxtObj.GetComponent<Text>();
+            MakeTextCrisp(wbText, new Color(0.20f, 0.02f, 0.30f, 0.95f), 1.0f);
+
             Button wbComp = wardrobeBtn.AddComponent<Button>();
-            ColorBlock wcb = wbComp.colors;
-            wcb.normalColor = new Color(1f, 1f, 1f, 0.001f);
-            wcb.highlightedColor = new Color(0.85f, 0.35f, 0.95f, 0.25f);
-            wcb.pressedColor = new Color(0.85f, 0.35f, 0.95f, 0.45f);
-            wbComp.colors = wcb;
+            wbComp.targetGraphic = wbImg;
             wbComp.onClick.AddListener(() =>
             {
                 if (m_IsLevelSelectTransitioning) return;
                 if (SoundManager.Instance != null) SoundManager.Instance.PlayButtonClick();
                 HapticManager.TriggerLight();
-                OpenSkinWardrobe();
+                StartCoroutine(AnimateButtonPress(m_LevelSelectWardrobeRt, OpenSkinWardrobe));
             });
 
-            // C. Dynamic Stars Badge Text (directly mapped inside the artwork's golden pill)
+            // C. Dynamic Stars Badge (Gold/Sapphire pill with 3D star icon)
             GameObject starsBadgeObj = new GameObject("StarsBadge");
             starsBadgeObj.transform.SetParent(m_LevelSelectPanel.transform, false);
             m_LevelSelectStarsRt = starsBadgeObj.AddComponent<RectTransform>();
             m_LevelSelectStarsRt.anchorMin = new Vector2(0.5f, 1f);
             m_LevelSelectStarsRt.anchorMax = new Vector2(0.5f, 1f);
             m_LevelSelectStarsRt.pivot = new Vector2(0.5f, 0.5f);
-            m_LevelSelectStarsRt.anchoredPosition = new Vector2(-114f, -canvasHeight * (357.5f / 1376f));
-            m_LevelSelectStarsRt.sizeDelta = new Vector2(180f, 38f);
+            m_LevelSelectStarsRt.anchoredPosition = new Vector2(-128f, -canvasHeight * (362f / 1376f));
+            m_LevelSelectStarsRt.sizeDelta = new Vector2(230f, 50f);
 
-            GameObject starsTxtObj = CreateText(starsBadgeObj.transform, Vector2.zero, new Vector2(180f, 38f), "", 24, FontStyle.Bold, Color.white, TextAnchor.MiddleCenter, m_CandyFont);
+            Image sbBg = starsBadgeObj.AddComponent<Image>();
+            sbBg.sprite = SpriteFactory.GetPanelSprite(new Color(0.06f, 0.12f, 0.26f, 0.88f), new Color(1.0f, 0.82f, 0.25f, 0.95f), 2f, 20);
+            sbBg.raycastTarget = false;
+
+            GameObject starIconObj = new GameObject("StarIcon");
+            starIconObj.transform.SetParent(starsBadgeObj.transform, false);
+            RectTransform siRt = starIconObj.AddComponent<RectTransform>();
+            siRt.anchorMin = new Vector2(0f, 0.5f);
+            siRt.anchorMax = new Vector2(0f, 0.5f);
+            siRt.pivot = new Vector2(0f, 0.5f);
+            siRt.anchoredPosition = new Vector2(10f, 0f);
+            siRt.sizeDelta = new Vector2(32f, 32f);
+            Image siImg = starIconObj.AddComponent<Image>();
+            siImg.sprite = GemIconFactory.GetStarSprite(true);
+            siImg.raycastTarget = false;
+
+            GameObject starsTxtObj = CreateText(starsBadgeObj.transform, new Vector2(14f, 0f), new Vector2(185f, 44f), "", 22, FontStyle.Bold, Color.white, TextAnchor.MiddleCenter, titleFont);
             m_LevelSelectStarsText = starsTxtObj.GetComponent<Text>();
-            MakeTextCrisp(m_LevelSelectStarsText, new Color(0.40f, 0.22f, 0.02f, 0.95f), 1.0f);
+            MakeTextCrisp(m_LevelSelectStarsText, new Color(0.02f, 0.05f, 0.16f, 0.95f), 1.0f);
 
             // 3. Node Container for interactive level spheres & chests
             GameObject nodeContainer = new GameObject("NodeContainer");
@@ -2881,11 +2917,12 @@ namespace BoxBlast
             if (m_LevelSelectStarsRt != null)
             {
                 m_LevelSelectStarsRt.pivot = new Vector2(0.5f, 0.5f);
-                m_LevelSelectStarsRt.anchoredPosition = new Vector2(-114f, -canvasHeight * (357.5f / 1376f));
+                m_LevelSelectStarsRt.anchoredPosition = new Vector2(-128f, -canvasHeight * (362f / 1376f));
             }
             if (m_LevelSelectWardrobeRt != null)
             {
-                m_LevelSelectWardrobeRt.anchoredPosition = new Vector2(130.8f, -canvasHeight * (362.5f / 1376f));
+                m_LevelSelectWardrobeRt.pivot = new Vector2(0.5f, 0.5f);
+                m_LevelSelectWardrobeRt.anchoredPosition = new Vector2(128f, -canvasHeight * (362f / 1376f));
             }
 
             int maxLvl = LevelManager.GetMaxLevel(mode);
