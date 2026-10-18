@@ -218,127 +218,126 @@ namespace BoxBlast
 
             switch (level)
             {
-                case 1: // First Jewels (Introductory friendly layout)
-                    SetGemPair(p, gems, 3, 4, 1, GemType.RedRuby);
-                    SetGemPair(p, gems, 3, 3, 3, GemType.YellowStar);
-                    SetGemPair(p, gems, 2, 2, 5, GemType.BlueDiamond);
-                    SetGemPair(p, gems, 3, 2, 2, GemType.OrangePentagon);
-                    AddTarget(targets, GemType.BlueDiamond, 2);
-                    AddTarget(targets, GemType.RedRuby, 2);
-                    AddTarget(targets, GemType.YellowStar, 2);
-                    AddTarget(targets, GemType.OrangePentagon, 2);
+                case 1: // First Jewels (Tutorial / Intro: ONLY 1 GEM - Red Ruby!)
+                    Set(p, 2, 4, 1);
+                    SetGemPair(p, gems, 3, 4, 1, GemType.RedRuby); // Center x=3, 4
+                    SetGemPair(p, gems, 3, 3, 1, GemType.RedRuby); // Center x=3, 4
+                    Set(p, 5, 4, 1);
+                    AddTarget(targets, GemType.RedRuby, 4);
                     break;
 
-                case 2: // The Gem Goblet (Exact layout from user screenshot!)
+                case 2: // The Gem Goblet (Intro to Blue Diamonds: ONLY 1 GEM!)
                     SetGemPair(p, gems, 1, 6, 5, GemType.BlueDiamond); // x=1, 6
                     SetGemPair(p, gems, 3, 6, 5, GemType.BlueDiamond); // x=3, 4
-                    SetGemPair(p, gems, 2, 5, 1, GemType.RedRuby);     // x=2, 5
-                    SetGemPair(p, gems, 3, 4, 1, GemType.RedRuby);     // x=3, 4
-                    SetGemPair(p, gems, 3, 3, 3, GemType.YellowStar);  // x=3, 4
-                    SetGemPair(p, gems, 3, 1, 2, GemType.OrangePentagon); // x=3, 4
-                    SetGemPair(p, gems, 0, 0, 2, GemType.OrangePentagon); // x=0, 7
+                    Set(p, 2, 5, 1);
+                    Set(p, 5, 5, 1);
+                    Set(p, 3, 4, 1);
+                    Set(p, 4, 4, 1);
+                    Set(p, 3, 3, 3);
+                    Set(p, 4, 3, 3);
+                    Set(p, 3, 1, 2);
+                    Set(p, 4, 1, 2);
+                    Set(p, 0, 0, 2);
+                    Set(p, 7, 0, 2);
                     AddTarget(targets, GemType.BlueDiamond, 4);
-                    AddTarget(targets, GemType.RedRuby, 4);
+                    break;
+
+                case 3: // Twin Diamonds (First 2-Gem Level: Blue Diamond + Yellow Star)
+                    SetGemPair(p, gems, 1, 5, 5, GemType.BlueDiamond);
+                    SetGemPair(p, gems, 0, 4, 5, GemType.BlueDiamond);
+                    Set(p, 2, 4, 1);
+                    Set(p, 5, 4, 1);
+                    SetGemPair(p, gems, 3, 2, 3, GemType.YellowStar);
+                    Set(p, 3, 1, 2);
+                    Set(p, 4, 1, 2);
+                    AddTarget(targets, GemType.BlueDiamond, 4);
                     AddTarget(targets, GemType.YellowStar, 2);
+                    break;
+
+                case 4: // Royal Butterfly (2 Gems: Yellow Star + Orange Pentagon)
+                    Set(p, 0, 6, 5);
+                    Set(p, 7, 6, 5);
+                    SetGemPair(p, gems, 1, 5, 3, GemType.YellowStar);
+                    SetGemPair(p, gems, 2, 4, 2, GemType.OrangePentagon);
+                    Set(p, 3, 3, 1);
+                    Set(p, 4, 3, 1);
+                    SetGemPair(p, gems, 1, 2, 3, GemType.YellowStar);
+                    SetGemPair(p, gems, 0, 1, 2, GemType.OrangePentagon);
+                    AddTarget(targets, GemType.YellowStar, 4);
                     AddTarget(targets, GemType.OrangePentagon, 4);
                     break;
 
-                case 3: // Twin Diamonds (Winged diamond formations)
-                    SetGemPair(p, gems, 1, 5, 5, GemType.BlueDiamond);
-                    SetGemPair(p, gems, 0, 4, 5, GemType.BlueDiamond);
-                    SetGemPair(p, gems, 2, 4, 1, GemType.RedRuby);
-                    SetGemPair(p, gems, 1, 3, 5, GemType.BlueDiamond);
-                    SetGemPair(p, gems, 3, 2, 3, GemType.YellowStar);
-                    SetGemPair(p, gems, 3, 1, 2, GemType.OrangePentagon);
-                    AddTarget(targets, GemType.BlueDiamond, 6);
-                    AddTarget(targets, GemType.RedRuby, 2);
-                    AddTarget(targets, GemType.YellowStar, 2);
-                    AddTarget(targets, GemType.OrangePentagon, 2);
-                    break;
-
-                case 4: // Royal Butterfly (Symmetric wings)
-                    SetGemPair(p, gems, 0, 6, 5, GemType.BlueDiamond);
-                    SetGemPair(p, gems, 1, 5, 3, GemType.YellowStar);
-                    SetGemPair(p, gems, 2, 4, 2, GemType.OrangePentagon);
-                    SetGemPair(p, gems, 3, 3, 1, GemType.RedRuby);
-                    SetGemPair(p, gems, 1, 2, 3, GemType.YellowStar);
-                    SetGemPair(p, gems, 0, 1, 5, GemType.BlueDiamond);
-                    AddTarget(targets, GemType.BlueDiamond, 4);
-                    AddTarget(targets, gems[1, 5], 4);
-                    AddTarget(targets, GemType.OrangePentagon, 2);
-                    AddTarget(targets, GemType.RedRuby, 2);
-                    break;
-
-                case 5: // Phoenix Heart (Heart silhouette)
+                case 5: // Phoenix Heart (Milestone Level: 3 Gems - Ruby, Pentagon, Star)
                     SetGemPair(p, gems, 2, 6, 1, GemType.RedRuby);
                     SetGemPair(p, gems, 1, 5, 1, GemType.RedRuby);
                     SetGemPair(p, gems, 3, 5, 3, GemType.YellowStar);
                     SetGemPair(p, gems, 1, 4, 2, GemType.OrangePentagon);
                     SetGemPair(p, gems, 2, 3, 2, GemType.OrangePentagon);
-                    SetGemPair(p, gems, 3, 2, 5, GemType.BlueDiamond);
+                    Set(p, 3, 2, 5);
+                    Set(p, 4, 2, 5);
                     AddTarget(targets, GemType.RedRuby, 4);
-                    AddTarget(targets, GemType.YellowStar, 2);
                     AddTarget(targets, GemType.OrangePentagon, 4);
-                    AddTarget(targets, GemType.BlueDiamond, 2);
+                    AddTarget(targets, GemType.YellowStar, 2);
                     break;
 
-                case 6: // Star Citadel (Fortress battlements)
+                case 6: // Star Citadel (Focus Challenge: Yellow Stars)
                     SetGemPair(p, gems, 0, 6, 3, GemType.YellowStar);
                     SetGemPair(p, gems, 2, 6, 3, GemType.YellowStar);
-                    SetGemPair(p, gems, 1, 5, 5, GemType.BlueDiamond);
-                    SetGemPair(p, gems, 3, 4, 1, GemType.RedRuby);
-                    SetGemPair(p, gems, 2, 3, 1, GemType.RedRuby);
-                    SetGemPair(p, gems, 3, 1, 2, GemType.OrangePentagon);
-                    AddTarget(targets, GemType.YellowStar, 4);
-                    AddTarget(targets, GemType.BlueDiamond, 2);
-                    AddTarget(targets, GemType.RedRuby, 4);
-                    AddTarget(targets, GemType.OrangePentagon, 2);
+                    SetGemPair(p, gems, 3, 1, 3, GemType.YellowStar);
+                    Set(p, 1, 5, 5);
+                    Set(p, 6, 5, 5);
+                    Set(p, 3, 4, 1);
+                    Set(p, 4, 4, 1);
+                    Set(p, 2, 3, 1);
+                    Set(p, 5, 3, 1);
+                    AddTarget(targets, GemType.YellowStar, 6);
                     break;
 
-                case 7: // Crystal Sword (Blade and crossguard)
+                case 7: // Crystal Sword (2 Gems: Blue Diamond + Red Ruby)
                     SetGemPair(p, gems, 3, 6, 5, GemType.BlueDiamond);
                     SetGemPair(p, gems, 3, 5, 5, GemType.BlueDiamond);
                     SetGemPair(p, gems, 3, 4, 5, GemType.BlueDiamond);
                     SetGemPair(p, gems, 1, 3, 1, GemType.RedRuby);
-                    SetGemPair(p, gems, 2, 3, 1, GemType.RedRuby);
-                    SetGemPair(p, gems, 3, 3, 3, GemType.YellowStar);
-                    SetGemPair(p, gems, 3, 1, 2, GemType.OrangePentagon);
-                    SetGemPair(p, gems, 3, 0, 3, GemType.YellowStar);
+                    Set(p, 2, 3, 1);
+                    Set(p, 5, 3, 1);
+                    Set(p, 3, 3, 3);
+                    Set(p, 4, 3, 3);
+                    Set(p, 3, 1, 2);
+                    Set(p, 4, 1, 2);
                     AddTarget(targets, GemType.BlueDiamond, 6);
-                    AddTarget(targets, GemType.RedRuby, 4);
-                    AddTarget(targets, GemType.YellowStar, 4);
-                    AddTarget(targets, GemType.OrangePentagon, 2);
+                    AddTarget(targets, GemType.RedRuby, 2);
                     break;
 
-                case 8: // Emperor's Crown (3-peak imperial crest)
+                case 8: // Emperor's Crown (3 Gems: Yellow Star + Red Ruby + Orange Pentagon)
                     SetGemPair(p, gems, 0, 6, 3, GemType.YellowStar);
-                    SetGemPair(p, gems, 3, 7, 5, GemType.BlueDiamond);
+                    Set(p, 3, 7, 5);
+                    Set(p, 4, 7, 5);
                     SetGemPair(p, gems, 1, 5, 1, GemType.RedRuby);
                     SetGemPair(p, gems, 2, 4, 1, GemType.RedRuby);
                     SetGemPair(p, gems, 3, 3, 3, GemType.YellowStar);
                     SetGemPair(p, gems, 1, 2, 2, GemType.OrangePentagon);
-                    SetGemPair(p, gems, 2, 2, 2, GemType.OrangePentagon);
+                    Set(p, 2, 2, 2);
+                    Set(p, 5, 2, 2);
                     AddTarget(targets, GemType.YellowStar, 4);
-                    AddTarget(targets, GemType.BlueDiamond, 2);
                     AddTarget(targets, GemType.RedRuby, 4);
-                    AddTarget(targets, GemType.OrangePentagon, 4);
+                    AddTarget(targets, GemType.OrangePentagon, 2);
                     break;
 
-                case 9: // Cosmic Anchor
+                case 9: // Cosmic Anchor (2 Gems: Blue Diamond + Yellow Star)
                     SetGemPair(p, gems, 3, 6, 3, GemType.YellowStar);
                     SetGemPair(p, gems, 3, 5, 5, GemType.BlueDiamond);
                     SetGemPair(p, gems, 3, 4, 5, GemType.BlueDiamond);
-                    SetGemPair(p, gems, 1, 3, 2, GemType.OrangePentagon);
-                    SetGemPair(p, gems, 0, 2, 1, GemType.RedRuby);
+                    Set(p, 1, 3, 2);
+                    Set(p, 6, 3, 2);
+                    Set(p, 0, 2, 1);
+                    Set(p, 7, 2, 1);
                     SetGemPair(p, gems, 2, 1, 5, GemType.BlueDiamond);
                     SetGemPair(p, gems, 3, 1, 3, GemType.YellowStar);
-                    AddTarget(targets, GemType.YellowStar, 4);
                     AddTarget(targets, GemType.BlueDiamond, 6);
-                    AddTarget(targets, GemType.OrangePentagon, 2);
-                    AddTarget(targets, GemType.RedRuby, 2);
+                    AddTarget(targets, GemType.YellowStar, 4);
                     break;
 
-                case 10: // Knight's Shield
+                case 10: // Knight's Shield (Chapter 1 Boss: ALL 4 GEMS!)
                     SetGemPair(p, gems, 1, 6, 1, GemType.RedRuby);
                     SetGemPair(p, gems, 2, 6, 1, GemType.RedRuby);
                     SetGemPair(p, gems, 0, 5, 3, GemType.YellowStar);
@@ -347,139 +346,149 @@ namespace BoxBlast
                     SetGemPair(p, gems, 2, 3, 2, GemType.OrangePentagon);
                     SetGemPair(p, gems, 3, 2, 5, GemType.BlueDiamond);
                     AddTarget(targets, GemType.RedRuby, 4);
-                    AddTarget(targets, GemType.YellowStar, 2);
                     AddTarget(targets, GemType.BlueDiamond, 4);
                     AddTarget(targets, GemType.OrangePentagon, 4);
+                    AddTarget(targets, GemType.YellowStar, 2);
                     break;
 
-                case 11: // Dragon Gaze
+                case 11: // Dragon Gaze (2 Gems: Red Ruby + Yellow Star)
                     SetGemPair(p, gems, 1, 6, 1, GemType.RedRuby);
                     SetGemPair(p, gems, 2, 5, 3, GemType.YellowStar);
-                    SetGemPair(p, gems, 1, 4, 5, GemType.BlueDiamond);
-                    SetGemPair(p, gems, 3, 4, 2, GemType.OrangePentagon);
+                    Set(p, 1, 4, 5);
+                    Set(p, 6, 4, 5);
+                    Set(p, 3, 4, 2);
+                    Set(p, 4, 4, 2);
                     SetGemPair(p, gems, 2, 2, 1, GemType.RedRuby);
                     SetGemPair(p, gems, 3, 1, 3, GemType.YellowStar);
                     AddTarget(targets, GemType.RedRuby, 4);
                     AddTarget(targets, GemType.YellowStar, 4);
-                    AddTarget(targets, GemType.BlueDiamond, 2);
-                    AddTarget(targets, GemType.OrangePentagon, 2);
                     break;
 
-                case 12: // Lotus Blossom
+                case 12: // Lotus Blossom (2 Gems: Blue Diamond + Orange Pentagon)
                     SetGemPair(p, gems, 3, 6, 5, GemType.BlueDiamond);
-                    SetGemPair(p, gems, 2, 5, 1, GemType.RedRuby);
-                    SetGemPair(p, gems, 0, 4, 3, GemType.YellowStar);
+                    Set(p, 2, 5, 1);
+                    Set(p, 5, 5, 1);
+                    Set(p, 0, 4, 3);
+                    Set(p, 7, 4, 3);
                     SetGemPair(p, gems, 3, 4, 2, GemType.OrangePentagon);
-                    SetGemPair(p, gems, 1, 3, 1, GemType.RedRuby);
+                    Set(p, 1, 3, 1);
+                    Set(p, 6, 3, 1);
                     SetGemPair(p, gems, 2, 2, 2, GemType.OrangePentagon);
                     SetGemPair(p, gems, 3, 1, 5, GemType.BlueDiamond);
                     AddTarget(targets, GemType.BlueDiamond, 4);
-                    AddTarget(targets, GemType.RedRuby, 4);
-                    AddTarget(targets, GemType.YellowStar, 2);
                     AddTarget(targets, GemType.OrangePentagon, 4);
                     break;
 
-                case 13: // Mystic Hourglass
+                case 13: // Mystic Hourglass (3 Gems: Blue Diamond + Yellow Star + Red Ruby)
                     SetGemPair(p, gems, 0, 6, 5, GemType.BlueDiamond);
                     SetGemPair(p, gems, 1, 6, 5, GemType.BlueDiamond);
                     SetGemPair(p, gems, 2, 5, 3, GemType.YellowStar);
                     SetGemPair(p, gems, 3, 4, 1, GemType.RedRuby);
-                    SetGemPair(p, gems, 3, 3, 1, GemType.RedRuby);
+                    Set(p, 3, 3, 1);
+                    Set(p, 4, 3, 1);
                     SetGemPair(p, gems, 2, 2, 3, GemType.YellowStar);
-                    SetGemPair(p, gems, 0, 1, 2, GemType.OrangePentagon);
-                    SetGemPair(p, gems, 1, 1, 2, GemType.OrangePentagon);
+                    Set(p, 0, 1, 2);
+                    Set(p, 7, 1, 2);
+                    Set(p, 1, 1, 2);
+                    Set(p, 6, 1, 2);
                     AddTarget(targets, GemType.BlueDiamond, 4);
                     AddTarget(targets, GemType.YellowStar, 4);
-                    AddTarget(targets, GemType.RedRuby, 4);
-                    AddTarget(targets, GemType.OrangePentagon, 4);
+                    AddTarget(targets, GemType.RedRuby, 2);
                     break;
 
-                case 14: // Castle Turrets
+                case 14: // Castle Turrets (2 Gems: Yellow Star + Red Ruby)
                     SetGemPair(p, gems, 0, 7, 3, GemType.YellowStar);
-                    SetGemPair(p, gems, 0, 5, 5, GemType.BlueDiamond);
+                    Set(p, 0, 5, 5);
+                    Set(p, 7, 5, 5);
                     SetGemPair(p, gems, 2, 5, 1, GemType.RedRuby);
-                    SetGemPair(p, gems, 3, 4, 2, GemType.OrangePentagon);
-                    SetGemPair(p, gems, 1, 3, 5, GemType.BlueDiamond);
+                    Set(p, 3, 4, 2);
+                    Set(p, 4, 4, 2);
+                    Set(p, 1, 3, 5);
+                    Set(p, 6, 3, 5);
                     SetGemPair(p, gems, 2, 2, 1, GemType.RedRuby);
-                    SetGemPair(p, gems, 0, 1, 2, GemType.OrangePentagon);
-                    AddTarget(targets, GemType.YellowStar, 2);
-                    AddTarget(targets, GemType.BlueDiamond, 4);
+                    SetGemPair(p, gems, 0, 1, 3, GemType.YellowStar);
+                    AddTarget(targets, GemType.YellowStar, 4);
                     AddTarget(targets, GemType.RedRuby, 4);
-                    AddTarget(targets, GemType.OrangePentagon, 4);
                     break;
 
-                case 15: // Falcon Wings
+                case 15: // Falcon Wings (Grand Diamond Rush: 1 GEM - Blue Diamond x8!)
                     SetGemPair(p, gems, 0, 6, 5, GemType.BlueDiamond);
                     SetGemPair(p, gems, 1, 6, 5, GemType.BlueDiamond);
-                    SetGemPair(p, gems, 2, 5, 3, GemType.YellowStar);
-                    SetGemPair(p, gems, 3, 5, 1, GemType.RedRuby);
-                    SetGemPair(p, gems, 2, 3, 2, GemType.OrangePentagon);
-                    SetGemPair(p, gems, 3, 2, 1, GemType.RedRuby);
-                    SetGemPair(p, gems, 3, 0, 3, GemType.YellowStar);
-                    AddTarget(targets, GemType.BlueDiamond, 4);
-                    AddTarget(targets, GemType.YellowStar, 4);
-                    AddTarget(targets, GemType.RedRuby, 4);
-                    AddTarget(targets, GemType.OrangePentagon, 2);
+                    SetGemPair(p, gems, 2, 4, 5, GemType.BlueDiamond);
+                    SetGemPair(p, gems, 3, 2, 5, GemType.BlueDiamond);
+                    Set(p, 2, 5, 3);
+                    Set(p, 5, 5, 3);
+                    Set(p, 3, 5, 1);
+                    Set(p, 4, 5, 1);
+                    Set(p, 2, 3, 2);
+                    Set(p, 5, 3, 2);
+                    Set(p, 3, 0, 3);
+                    Set(p, 4, 0, 3);
+                    AddTarget(targets, GemType.BlueDiamond, 8);
                     break;
 
-                case 16: // Infinity Loop
+                case 16: // Infinity Loop (2 Gems: Red Ruby + Yellow Star)
                     SetGemPair(p, gems, 1, 6, 1, GemType.RedRuby);
                     SetGemPair(p, gems, 2, 6, 3, GemType.YellowStar);
-                    SetGemPair(p, gems, 0, 5, 5, GemType.BlueDiamond);
-                    SetGemPair(p, gems, 3, 4, 2, GemType.OrangePentagon);
-                    SetGemPair(p, gems, 0, 3, 5, GemType.BlueDiamond);
+                    Set(p, 0, 5, 5);
+                    Set(p, 7, 5, 5);
+                    Set(p, 3, 4, 2);
+                    Set(p, 4, 4, 2);
+                    Set(p, 0, 3, 5);
+                    Set(p, 7, 3, 5);
                     SetGemPair(p, gems, 1, 2, 1, GemType.RedRuby);
                     SetGemPair(p, gems, 2, 2, 3, GemType.YellowStar);
                     AddTarget(targets, GemType.RedRuby, 4);
                     AddTarget(targets, GemType.YellowStar, 4);
-                    AddTarget(targets, GemType.BlueDiamond, 4);
-                    AddTarget(targets, GemType.OrangePentagon, 2);
                     break;
 
-                case 17: // Sunburst Nova
+                case 17: // Sunburst Nova (2 Gems: Yellow Star + Orange Pentagon)
                     SetGemPair(p, gems, 3, 7, 3, GemType.YellowStar);
                     SetGemPair(p, gems, 1, 5, 2, GemType.OrangePentagon);
-                    SetGemPair(p, gems, 3, 5, 1, GemType.RedRuby);
+                    Set(p, 3, 5, 1);
+                    Set(p, 4, 5, 1);
                     SetGemPair(p, gems, 0, 4, 3, GemType.YellowStar);
-                    SetGemPair(p, gems, 2, 3, 5, GemType.BlueDiamond);
-                    SetGemPair(p, gems, 3, 2, 1, GemType.RedRuby);
+                    Set(p, 2, 3, 5);
+                    Set(p, 5, 3, 5);
+                    Set(p, 3, 2, 1);
+                    Set(p, 4, 2, 1);
                     SetGemPair(p, gems, 1, 1, 2, GemType.OrangePentagon);
                     AddTarget(targets, GemType.YellowStar, 4);
                     AddTarget(targets, GemType.OrangePentagon, 4);
-                    AddTarget(targets, GemType.RedRuby, 4);
-                    AddTarget(targets, GemType.BlueDiamond, 2);
                     break;
 
-                case 18: // King's Throne
+                case 18: // King's Throne (3 Gems: Red Ruby + Blue Diamond + Yellow Star)
                     SetGemPair(p, gems, 1, 6, 1, GemType.RedRuby);
                     SetGemPair(p, gems, 3, 6, 3, GemType.YellowStar);
                     SetGemPair(p, gems, 1, 4, 5, GemType.BlueDiamond);
-                    SetGemPair(p, gems, 2, 4, 2, GemType.OrangePentagon);
+                    Set(p, 2, 4, 2);
+                    Set(p, 5, 4, 2);
                     SetGemPair(p, gems, 3, 3, 1, GemType.RedRuby);
                     SetGemPair(p, gems, 1, 1, 5, GemType.BlueDiamond);
-                    SetGemPair(p, gems, 2, 1, 2, GemType.OrangePentagon);
+                    Set(p, 2, 1, 2);
+                    Set(p, 5, 1, 2);
                     AddTarget(targets, GemType.RedRuby, 4);
-                    AddTarget(targets, GemType.YellowStar, 2);
                     AddTarget(targets, GemType.BlueDiamond, 4);
-                    AddTarget(targets, GemType.OrangePentagon, 4);
+                    AddTarget(targets, GemType.YellowStar, 2);
                     break;
 
-                case 19: // Treasure Chest
+                case 19: // Treasure Chest (3 Gems: Yellow Star + Blue Diamond + Orange Pentagon)
                     SetGemPair(p, gems, 1, 5, 3, GemType.YellowStar);
                     SetGemPair(p, gems, 2, 5, 5, GemType.BlueDiamond);
-                    SetGemPair(p, gems, 3, 5, 1, GemType.RedRuby);
+                    Set(p, 3, 5, 1);
+                    Set(p, 4, 5, 1);
                     SetGemPair(p, gems, 0, 3, 2, GemType.OrangePentagon);
                     SetGemPair(p, gems, 1, 3, 3, GemType.YellowStar);
                     SetGemPair(p, gems, 2, 3, 5, GemType.BlueDiamond);
-                    SetGemPair(p, gems, 3, 3, 1, GemType.RedRuby);
+                    Set(p, 3, 3, 1);
+                    Set(p, 4, 3, 1);
                     SetGemPair(p, gems, 1, 1, 2, GemType.OrangePentagon);
                     AddTarget(targets, GemType.YellowStar, 4);
                     AddTarget(targets, GemType.BlueDiamond, 4);
-                    AddTarget(targets, GemType.RedRuby, 4);
                     AddTarget(targets, GemType.OrangePentagon, 4);
                     break;
 
-                case 20: // Grand Masterpiece (Level 20 Climax)
+                case 20: // Grand Masterpiece (Chapter 2 Climax: ALL 4 GEMS!)
                     SetGemPair(p, gems, 3, 7, 5, GemType.BlueDiamond);
                     SetGemPair(p, gems, 2, 6, 1, GemType.RedRuby);
                     SetGemPair(p, gems, 1, 5, 3, GemType.YellowStar);
@@ -496,72 +505,74 @@ namespace BoxBlast
 
                 // ==========================================
                 // 🚀 LEVELS 21 TO 40: EXPANDED MASTER JOURNEY
+                // Diverse rotating gem objectives (1, 2, 3, and 4 gems)!
                 // ==========================================
                 default:
                 {
-                    // Procedural symmetric artistic layouts for Levels 21 to 40
-                    int seed = level * 31;
                     int shapeStyle = level % 5;
 
                     switch (shapeStyle)
                     {
-                        case 0: // Tiered Pyramid
+                        case 0: // Tiered Pyramid (2 Gems: Diamond + Ruby)
                             SetGemPair(p, gems, 3, 6, 5, GemType.BlueDiamond);
                             SetGemPair(p, gems, 2, 5, 1, GemType.RedRuby);
                             SetGemPair(p, gems, 3, 5, 1, GemType.RedRuby);
-                            SetGemPair(p, gems, 1, 3, 3, GemType.YellowStar);
-                            SetGemPair(p, gems, 2, 3, 2, GemType.OrangePentagon);
+                            Set(p, 1, 3, 3);
+                            Set(p, 6, 3, 3);
+                            Set(p, 2, 3, 2);
+                            Set(p, 5, 3, 2);
                             SetGemPair(p, gems, 0, 1, 5, GemType.BlueDiamond);
-                            SetGemPair(p, gems, 3, 1, 3, GemType.YellowStar);
+                            Set(p, 3, 1, 3);
+                            Set(p, 4, 1, 3);
                             AddTarget(targets, GemType.BlueDiamond, 4);
                             AddTarget(targets, GemType.RedRuby, 4);
-                            AddTarget(targets, GemType.YellowStar, 4);
-                            AddTarget(targets, GemType.OrangePentagon, 2);
                             break;
 
-                        case 1: // Diamond Cross
+                        case 1: // Diamond Cross (2 Gems: Star + Diamond)
                             SetGemPair(p, gems, 3, 7, 3, GemType.YellowStar);
                             SetGemPair(p, gems, 3, 5, 5, GemType.BlueDiamond);
-                            SetGemPair(p, gems, 1, 4, 1, GemType.RedRuby);
-                            SetGemPair(p, gems, 2, 4, 2, GemType.OrangePentagon);
+                            Set(p, 1, 4, 1);
+                            Set(p, 6, 4, 1);
+                            Set(p, 2, 4, 2);
+                            Set(p, 5, 4, 2);
                             SetGemPair(p, gems, 3, 4, 3, GemType.YellowStar);
-                            SetGemPair(p, gems, 2, 2, 1, GemType.RedRuby);
+                            Set(p, 2, 2, 1);
+                            Set(p, 5, 2, 1);
                             SetGemPair(p, gems, 3, 1, 5, GemType.BlueDiamond);
                             AddTarget(targets, GemType.YellowStar, 4);
                             AddTarget(targets, GemType.BlueDiamond, 4);
-                            AddTarget(targets, GemType.RedRuby, 4);
-                            AddTarget(targets, GemType.OrangePentagon, 2);
                             break;
 
-                        case 2: // Dual Rings
-                            SetGemPair(p, gems, 1, 6, 5, GemType.BlueDiamond);
-                            SetGemPair(p, gems, 2, 6, 5, GemType.BlueDiamond);
+                        case 2: // Dual Rings (2 Gems: Pentagon + Ruby)
+                            Set(p, 1, 6, 5);
+                            Set(p, 6, 6, 5);
+                            Set(p, 2, 6, 5);
+                            Set(p, 5, 6, 5);
                             SetGemPair(p, gems, 0, 4, 1, GemType.RedRuby);
-                            SetGemPair(p, gems, 3, 4, 3, GemType.YellowStar);
+                            Set(p, 3, 4, 3);
+                            Set(p, 4, 4, 3);
                             SetGemPair(p, gems, 1, 2, 2, GemType.OrangePentagon);
                             SetGemPair(p, gems, 2, 2, 2, GemType.OrangePentagon);
                             SetGemPair(p, gems, 3, 1, 1, GemType.RedRuby);
-                            AddTarget(targets, GemType.BlueDiamond, 4);
-                            AddTarget(targets, GemType.RedRuby, 4);
-                            AddTarget(targets, GemType.YellowStar, 2);
                             AddTarget(targets, GemType.OrangePentagon, 4);
+                            AddTarget(targets, GemType.RedRuby, 4);
                             break;
 
-                        case 3: // Crest of Valor
+                        case 3: // Crest of Valor (3 Gems: Star + Ruby + Diamond)
                             SetGemPair(p, gems, 0, 7, 3, GemType.YellowStar);
                             SetGemPair(p, gems, 2, 6, 1, GemType.RedRuby);
                             SetGemPair(p, gems, 1, 4, 5, GemType.BlueDiamond);
-                            SetGemPair(p, gems, 3, 4, 2, GemType.OrangePentagon);
+                            Set(p, 3, 4, 2);
+                            Set(p, 4, 4, 2);
                             SetGemPair(p, gems, 2, 3, 1, GemType.RedRuby);
                             SetGemPair(p, gems, 0, 1, 3, GemType.YellowStar);
                             SetGemPair(p, gems, 3, 1, 5, GemType.BlueDiamond);
                             AddTarget(targets, GemType.YellowStar, 4);
                             AddTarget(targets, GemType.RedRuby, 4);
                             AddTarget(targets, GemType.BlueDiamond, 4);
-                            AddTarget(targets, GemType.OrangePentagon, 2);
                             break;
 
-                        default: // Grand Temple
+                        default: // Grand Temple (Epic Finale: ALL 4 GEMS!)
                             SetGemPair(p, gems, 1, 7, 1, GemType.RedRuby);
                             SetGemPair(p, gems, 3, 6, 3, GemType.YellowStar);
                             SetGemPair(p, gems, 0, 5, 5, GemType.BlueDiamond);
