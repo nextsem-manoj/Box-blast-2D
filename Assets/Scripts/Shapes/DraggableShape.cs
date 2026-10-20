@@ -141,8 +141,8 @@ namespace BoxBlast
                 return;
             }
 
-            // In level mode: do not allow dragging if level is inactive or out of moves
-            if (LevelManager.Instance != null && LevelManager.Instance.IsLevelActive && LevelManager.Instance.MovesRemaining <= 0)
+            // In level mode: do not allow dragging if level completed, victory pending, or out of moves
+            if (LevelManager.Instance != null && (LevelManager.Instance.IsLevelCompleted || LevelManager.Instance.IsVictoryPending || (LevelManager.Instance.IsLevelActive && LevelManager.Instance.MovesRemaining <= 0)))
             {
                 return;
             }

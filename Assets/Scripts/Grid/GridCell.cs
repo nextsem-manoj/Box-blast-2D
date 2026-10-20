@@ -21,7 +21,7 @@ namespace BoxBlast
         private SpriteRenderer m_LineGlowRenderer;
 
         public const float BlockScale = 0.88f;
-        public const float GemScale = 0.52f;
+        public const float GemScale = 0.72f;
 
         private GameObject m_BlockObj;
         private GameObject m_PreviewObj;

@@ -42,8 +42,7 @@ namespace BoxBlast
 
         private float GetBowlScale()
         {
-            bool isLevel = (LevelManager.Instance != null && LevelManager.Instance.IsLevelActive);
-            return isLevel ? 0.82f : 0.84f;
+            return 1.0f;
         }
 
         private Vector3[] m_CurrentSlotPositions;

@@ -16,7 +16,6 @@ namespace BoxBlast
     public class LevelManager : MonoBehaviour
     {
         public static LevelManager Instance { get; private set; }
-
         public GameModeType CurrentMode { get; private set; } = GameModeType.Adventure;
         public int CurrentLevelNumber { get; private set; } = 1;
         public LevelData CurrentLevel { get; private set; }
@@ -27,6 +26,7 @@ namespace BoxBlast
         public Dictionary<GemType, int> CollectedGems { get; private set; } = new Dictionary<GemType, int>();
         public bool IsLevelActive { get; private set; }
         public bool IsLevelCompleted { get; private set; }
+        public bool IsVictoryPending { get; private set; }
 
         public const int MaxExtraMovesPerLevel = 3;
         public int ExtraMovesUsed { get; private set; } = 0;
@@ -75,6 +75,17 @@ namespace BoxBlast
             if (Instance == this) Instance = null;
         }
 
+        private void Update()
+        {
+            if (IsLevelActive && !IsLevelCompleted && !IsVictoryPending)
+            {
+                if (CheckGoalReached())
+                {
+                    TriggerVictorySequence();
+                }
+            }
+        }
+
         public void StartLevel(GameModeType mode, int levelNum)
         {
             CurrentMode = mode;
@@ -107,6 +118,7 @@ namespace BoxBlast
             // CRITICAL: Level is inactive during setup so cleanup/resets cannot trigger gameplay events
             IsLevelActive = false;
             IsLevelCompleted = false;
+            IsVictoryPending = false;
 
             DraggableShape.ResetActiveDrag();
 
@@ -153,6 +165,7 @@ namespace BoxBlast
             StopAllCoroutines();
             IsLevelActive = false;
             IsLevelCompleted = false;
+            IsVictoryPending = false;
             DraggableShape.ResetActiveDrag();
             if (UIManager.Instance != null)
             {
@@ -192,7 +205,7 @@ namespace BoxBlast
                 // Check victory after move
                 if (CheckGoalReached())
                 {
-                    CompleteLevel();
+                    TriggerVictorySequence();
                     return;
                 }
 
@@ -244,7 +257,7 @@ namespace BoxBlast
 
             if (CheckGoalReached())
             {
-                CompleteLevel();
+                TriggerVictorySequence();
             }
         }
 
@@ -274,7 +287,7 @@ namespace BoxBlast
 
             if (CheckGoalReached())
             {
-                CompleteLevel();
+                TriggerVictorySequence();
             }
         }
 
@@ -341,11 +354,34 @@ namespace BoxBlast
             return "";
         }
 
+        public void TriggerVictorySequence()
+        {
+            if (IsLevelCompleted || IsVictoryPending) return;
+            IsVictoryPending = true;
+            DraggableShape.ResetActiveDrag();
+            StartCoroutine(EvaluateDelayedVictory());
+        }
+
+        private System.Collections.IEnumerator EvaluateDelayedVictory()
+        {
+            // Grace period: allow line blast wave and flying gems to land on HUD before popping modal!
+            yield return new WaitForSeconds(0.55f);
+
+            IsVictoryPending = false;
+            if (CheckGoalReached())
+            {
+                CompleteLevel();
+            }
+        }
+
         private void CompleteLevel()
         {
             if (IsLevelCompleted) return;
             IsLevelCompleted = true;
             IsLevelActive = false;
+            IsVictoryPending = false;
+
+            DraggableShape.ResetActiveDrag();
 
             // Calculate Stars (1 to 3 based on remaining moves efficiency)
             int stars = 1;

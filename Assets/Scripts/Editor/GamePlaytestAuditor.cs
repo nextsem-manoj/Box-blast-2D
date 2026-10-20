@@ -185,7 +185,7 @@ namespace BoxBlast.Editor
             float blockScale = GridCell.BlockScale;
             float gemScale = GridCell.GemScale;
             sb.AppendLine($"  GridCell.BlockScale = {blockScale} (Expected: ~0.88f)");
-            sb.AppendLine($"  GridCell.GemScale = {gemScale} (Expected: ~0.52f)");
+            sb.AppendLine($"  GridCell.GemScale = {gemScale} (Expected: ~0.72f)");
 
             if (blockScale > 1.05f)
             {
@@ -203,15 +203,15 @@ namespace BoxBlast.Editor
                 sb.AppendLine("  [PASS] BlockScale sits snugly within the socket rim with elegant margins.");
             }
 
-            if (gemScale > 0.65f)
+            if (gemScale > 0.82f)
             {
                 warningCount++;
-                sb.AppendLine("  [WARN] GemScale is too large (>0.65f), gems overflow ball core!");
+                sb.AppendLine("  [WARN] GemScale is too large (>0.82f), gems overflow ball core!");
             }
-            else if (gemScale < 0.38f)
+            else if (gemScale < 0.45f)
             {
                 warningCount++;
-                sb.AppendLine("  [WARN] GemScale is small (<0.38f), gems appear tiny inside spheres!");
+                sb.AppendLine("  [WARN] GemScale is small (<0.45f), gems appear tiny inside spheres!");
             }
             else
             {

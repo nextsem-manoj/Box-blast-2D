@@ -845,6 +845,82 @@ namespace BoxBlast
             return sprite;
         }
 
+        /// <summary>
+        /// Glossy 3D Candy Pill Sprite with vertical gradient, shiny specular top arc, and outer bevel rim.
+        /// Perfect for Adventure Trail header badges (Stars pill, Ball Designs pill).
+        /// </summary>
+        public static Sprite GetCandyPillSprite(Color topColor, Color bottomColor, Color borderColor, Color shineColor)
+        {
+            string key = $"CandyPill_{ColorUtility.ToHtmlStringRGBA(topColor)}_{ColorUtility.ToHtmlStringRGBA(bottomColor)}_{ColorUtility.ToHtmlStringRGBA(borderColor)}";
+            if (s_SpriteCache.TryGetValue(key, out Sprite cached) && cached != null && cached.texture != null) return cached;
+
+            int size = 128;
+            int radius = 48;
+            Texture2D tex = CreateCrispTexture(size, size);
+            Color[] pixels = new Color[size * size];
+
+            for (int y = 0; y < size; y++)
+            {
+                float ny = (float)y / (size - 1);
+                for (int x = 0; x < size; x++)
+                {
+                    float dist = GetRoundedRectDistance(x, y, size, size, radius);
+                    if (dist > 1.0f)
+                    {
+                        pixels[y * size + x] = Color.clear;
+                        continue;
+                    }
+
+                    float outerAlpha = Mathf.Clamp01((1.0f - dist) * 20f);
+
+                    // Outer Embossed Rim / Border (dist between 0.83 and 1.0)
+                    if (dist >= 0.83f)
+                    {
+                        Color rim = borderColor;
+                        if (ny > 0.55f)
+                        {
+                            rim = Color.Lerp(rim, shineColor, (ny - 0.55f) / 0.45f * 0.85f);
+                        }
+                        else if (ny < 0.25f)
+                        {
+                            rim = Color.Lerp(rim, Color.black, (0.25f - ny) / 0.25f * 0.40f);
+                        }
+                        rim.a *= outerAlpha;
+                        pixels[y * size + x] = rim;
+                    }
+                    else
+                    {
+                        // Inner body vertical gradient
+                        Color body = Color.Lerp(bottomColor, topColor, ny);
+
+                        // Glossy specular crescent highlight on top 45%
+                        if (ny > 0.52f)
+                        {
+                            float gloss = Mathf.Pow((ny - 0.52f) / 0.48f, 1.35f) * 0.50f;
+                            body = Color.Lerp(body, shineColor, gloss);
+                        }
+                        // Bottom subtle shadow bevel
+                        else if (ny < 0.18f)
+                        {
+                            float botShadow = (0.18f - ny) / 0.18f * 0.22f;
+                            body = Color.Lerp(body, Color.black, botShadow);
+                        }
+
+                        body.a *= outerAlpha;
+                        pixels[y * size + x] = body;
+                    }
+                }
+            }
+
+            tex.SetPixels(pixels);
+            tex.Apply(true, false);
+
+            Vector4 border = new Vector4(radius + 2, radius + 2, radius + 2, radius + 2);
+            Sprite sprite = Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 100f, 0, SpriteMeshType.FullRect, border);
+            s_SpriteCache[key] = sprite;
+            return sprite;
+        }
+
         public static Sprite Get3DPillButtonSprite(Color baseColor, Color shadowColor)
         {
             string key = $"Btn3D_{ColorUtility.ToHtmlStringRGBA(baseColor)}_{ColorUtility.ToHtmlStringRGBA(shadowColor)}";

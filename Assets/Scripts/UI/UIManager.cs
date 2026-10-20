@@ -82,6 +82,7 @@ namespace BoxBlast
         private Text m_VictoryTitleText;
         private Text m_VictorySubtitleText;
         private GameObject m_VictoryNextBtnObj;
+        private GameObject m_VictoryNextDisabledOverlay;
         private Image[] m_VictoryStarImgs = new Image[3];
         private GameObject m_DefeatModal;
 
@@ -1097,14 +1098,15 @@ namespace BoxBlast
             sceneImg.color = Color.white;
             sceneImg.raycastTarget = true;
 
-            // 2. Candy 3D Ruby Red Close (X) Button (placed directly over painted red X at X: 248, Y: 341)
+            // 2. 3D Ruby Red Close (X) Button (placed at top-right X: 228, Y: 406)
             GameObject settingsCloseObj = new GameObject("SettingsCloseBtn", typeof(RectTransform));
             settingsCloseObj.transform.SetParent(sceneObj.transform, false);
             RectTransform sCloseRt = settingsCloseObj.GetComponent<RectTransform>();
-            sCloseRt.anchoredPosition = new Vector2(248f, 341f);
-            sCloseRt.sizeDelta = new Vector2(96f, 96f);
+            sCloseRt.anchoredPosition = new Vector2(228f, 406f);
+            sCloseRt.sizeDelta = new Vector2(92f, 92f);
             Image sCloseImg = settingsCloseObj.AddComponent<Image>();
-            sCloseImg.color = Color.clear;
+            sCloseImg.sprite = SpriteFactory.LoadOrFallbackSprite("Settings_Btn_CloseX");
+            sCloseImg.color = Color.white;
             sCloseImg.raycastTarget = true;
             Button sCloseBtn = settingsCloseObj.AddComponent<Button>();
             sCloseBtn.onClick.AddListener(() =>
@@ -1116,24 +1118,24 @@ namespace BoxBlast
             });
             settingsCloseObj.transform.SetAsLastSibling();
 
-            // 3. Sound Toggle (X: 134, Y: 208)
-            CreateConcept2Toggle(sceneObj.transform, new Vector2(134, 208), new Vector2(124, 56), OnToggleSfxClicked, out m_SfxToggleTrackImg);
+            // 3. Sound Toggle (X: 171, Y: 178)
+            CreateConcept2Toggle(sceneObj.transform, new Vector2(171f, 178f), new Vector2(140f, 72f), OnToggleSfxClicked, out m_SfxToggleTrackImg);
 
-            // 4. Music Toggle (X: 134, Y: 100)
-            CreateConcept2Toggle(sceneObj.transform, new Vector2(134, 100), new Vector2(124, 56), OnToggleMusicClicked, out m_MusicToggleTrackImg);
+            // 4. Music Toggle (X: 171, Y: 38)
+            CreateConcept2Toggle(sceneObj.transform, new Vector2(171f, 38f), new Vector2(140f, 72f), OnToggleMusicClicked, out m_MusicToggleTrackImg);
 
-            // 5. Vibration Toggle (X: 134, Y: -8)
-            CreateConcept2Toggle(sceneObj.transform, new Vector2(134, -8), new Vector2(124, 56), OnToggleHapticsClicked, out m_HapticToggleTrackImg);
+            // 5. Vibration Toggle (X: 171, Y: -112)
+            CreateConcept2Toggle(sceneObj.transform, new Vector2(171f, -112f), new Vector2(140f, 72f), OnToggleHapticsClicked, out m_HapticToggleTrackImg);
 
-            // 6. Ball Designs Button (X: 0, Y: -105, Size: 404 x 82)
-            CreateConcept2Button(sceneObj.transform, new Vector2(0, -105), new Vector2(404, 82), "Settings_Btn_BallDesigns", () =>
+            // 6. Ball Designs Button (X: 0, Y: -262, Size: 384 x 86)
+            CreateConcept2Button(sceneObj.transform, new Vector2(0f, -262f), new Vector2(384f, 86f), "Settings_Btn_BallDesigns", () =>
             {
                 m_SettingsModal.SetActive(false);
                 OpenSkinWardrobe();
             });
 
-            // 7. Restart Game Button (X: 0, Y: -199, Size: 404 x 82)
-            CreateConcept2Button(sceneObj.transform, new Vector2(0, -199), new Vector2(404, 82), "Settings_Btn_Restart", () =>
+            // 7. Restart Game Button (X: 0, Y: -385, Size: 384 x 86)
+            CreateConcept2Button(sceneObj.transform, new Vector2(0f, -385f), new Vector2(384f, 86f), "Settings_Btn_Restart", () =>
             {
                 m_SettingsModal.SetActive(false);
                 if (LevelManager.Instance != null && LevelManager.Instance.IsLevelActive)
@@ -1146,8 +1148,8 @@ namespace BoxBlast
                 }
             });
 
-            // 8. Home Button (X: 0, Y: -293, Size: 404 x 82)
-            CreateConcept2Button(sceneObj.transform, new Vector2(0, -293), new Vector2(404, 82), "Settings_Btn_Home", OnHomeClicked);
+            // 8. Home Button (X: 0, Y: -508, Size: 384 x 86)
+            CreateConcept2Button(sceneObj.transform, new Vector2(0f, -508f), new Vector2(384f, 86f), "Settings_Btn_Home", OnHomeClicked);
 
             RefreshSettingsUI();
             m_SettingsModal.SetActive(false);
@@ -1953,6 +1955,10 @@ namespace BoxBlast
                 {
                     m_VictoryNextBtnObj.SetActive(hasNextLevel);
                 }
+                if (m_VictoryNextDisabledOverlay != null)
+                {
+                    m_VictoryNextDisabledOverlay.SetActive(!hasNextLevel);
+                }
                 if (m_VictoryStarImgs != null)
                 {
                     for (int i = 0; i < 3; i++)
@@ -2404,8 +2410,8 @@ namespace BoxBlast
             GameObject advBtnObj = new GameObject("Button_Adventure");
             advBtnObj.transform.SetParent(cardObj.transform, false);
             RectTransform advRt = advBtnObj.AddComponent<RectTransform>();
-            advRt.anchorMin = new Vector2(0.150f, 0.125f);
-            advRt.anchorMax = new Vector2(0.895f, 0.275f);
+            advRt.anchorMin = new Vector2(0.140f, 0.155f);
+            advRt.anchorMax = new Vector2(0.860f, 0.255f);
             advRt.offsetMin = Vector2.zero;
             advRt.offsetMax = Vector2.zero;
 
@@ -2440,8 +2446,8 @@ namespace BoxBlast
             GameObject classicBtnObj = new GameObject("Button_Classic");
             classicBtnObj.transform.SetParent(cardObj.transform, false);
             RectTransform clRt = classicBtnObj.AddComponent<RectTransform>();
-            clRt.anchorMin = new Vector2(0.125f, 0.015f);
-            clRt.anchorMax = new Vector2(0.895f, 0.130f);
+            clRt.anchorMin = new Vector2(0.140f, 0.055f);
+            clRt.anchorMax = new Vector2(0.760f, 0.145f);
             clRt.offsetMin = Vector2.zero;
             clRt.offsetMax = Vector2.zero;
 
@@ -2480,8 +2486,8 @@ namespace BoxBlast
             GameObject settingsBtnObj = new GameObject("Button_Settings");
             settingsBtnObj.transform.SetParent(cardObj.transform, false);
             RectTransform stRt = settingsBtnObj.AddComponent<RectTransform>();
-            stRt.anchorMin = new Vector2(0.805f, 0.840f);
-            stRt.anchorMax = new Vector2(0.980f, 0.960f);
+            stRt.anchorMin = new Vector2(0.790f, 0.875f);
+            stRt.anchorMax = new Vector2(0.985f, 0.975f);
             stRt.offsetMin = Vector2.zero;
             stRt.offsetMax = Vector2.zero;
 
@@ -2512,8 +2518,8 @@ namespace BoxBlast
             GameObject wardrobeBtnObj = new GameObject("Button_Wardrobe");
             wardrobeBtnObj.transform.SetParent(cardObj.transform, false);
             RectTransform wdRt = wardrobeBtnObj.AddComponent<RectTransform>();
-            wdRt.anchorMin = new Vector2(0.014f, 0.840f);
-            wdRt.anchorMax = new Vector2(0.249f, 0.964f);
+            wdRt.anchorMin = new Vector2(0.015f, 0.875f);
+            wdRt.anchorMax = new Vector2(0.205f, 0.975f);
             wdRt.offsetMin = Vector2.zero;
             wdRt.offsetMax = Vector2.zero;
             m_HomeBallDesignsPillRt = wdRt;
@@ -2545,8 +2551,8 @@ namespace BoxBlast
             GameObject crownStarGlint = new GameObject("CrownStarGlint");
             crownStarGlint.transform.SetParent(cardObj.transform, false);
             RectTransform csgRt = crownStarGlint.AddComponent<RectTransform>();
-            csgRt.anchorMin = new Vector2(0.50f, 0.955f);
-            csgRt.anchorMax = new Vector2(0.50f, 0.955f);
+            csgRt.anchorMin = new Vector2(0.50f, 0.980f);
+            csgRt.anchorMax = new Vector2(0.50f, 0.980f);
             csgRt.anchoredPosition = Vector2.zero;
             csgRt.sizeDelta = new Vector2(36, 36);
             Image csgImg = crownStarGlint.AddComponent<Image>();
@@ -2558,8 +2564,8 @@ namespace BoxBlast
             GameObject crownTapObj = new GameObject("Crown_InteractiveZone");
             crownTapObj.transform.SetParent(cardObj.transform, false);
             RectTransform crRt = crownTapObj.AddComponent<RectTransform>();
-            crRt.anchorMin = new Vector2(0.35f, 0.885f);
-            crRt.anchorMax = new Vector2(0.65f, 0.965f);
+            crRt.anchorMin = new Vector2(0.34f, 0.875f);
+            crRt.anchorMax = new Vector2(0.66f, 0.985f);
             crRt.offsetMin = Vector2.zero;
             crRt.offsetMax = Vector2.zero;
             Image crImg = crownTapObj.AddComponent<Image>();
@@ -2572,6 +2578,26 @@ namespace BoxBlast
                 if (SoundManager.Instance != null) SoundManager.Instance.PlayButtonClick();
                 HapticManager.TriggerLight();
                 StartCoroutine(AnimateCrownSparkle(csgRt));
+            });
+
+            // 6. Interactive Treasure Chest Easter Egg (Directly over the 3D glowing gold chest at bottom right)
+            GameObject chestBtnObj = new GameObject("Button_TreasureChest");
+            chestBtnObj.transform.SetParent(cardObj.transform, false);
+            RectTransform chRt = chestBtnObj.AddComponent<RectTransform>();
+            chRt.anchorMin = new Vector2(0.74f, 0.025f);
+            chRt.anchorMax = new Vector2(0.99f, 0.170f);
+            chRt.offsetMin = Vector2.zero;
+            chRt.offsetMax = Vector2.zero;
+            Image chImg = chestBtnObj.AddComponent<Image>();
+            chImg.color = Color.clear;
+            chImg.raycastTarget = true;
+            Button chBtn = chestBtnObj.AddComponent<Button>();
+            chBtn.transition = Selectable.Transition.None;
+            chBtn.onClick.AddListener(() =>
+            {
+                if (SoundManager.Instance != null) SoundManager.Instance.PlayButtonClick();
+                HapticManager.TriggerMedium();
+                FloatingText.Create(Vector3.zero, "TREASURE VAULT!", Color.yellow);
             });
 
             // 7. Living Idle Animation: Twinkling crown jewel, breathing buttons
@@ -2812,51 +2838,54 @@ namespace BoxBlast
                 }
             });
 
-            // Top Royal Golden Crown Ribbon Title: "ADVENTURE TRAIL" (3D Curved Golden Candy Embossed)
+            // Top Royal Golden Crown Ribbon Title: "ADVENTURE TRAIL" (Hero 3D Typography matching Ball Blast master style)
             GameObject trailTitleObj = new GameObject("AdventureTrailTitle");
             trailTitleObj.transform.SetParent(m_LevelSelectPanel.transform, false);
             m_LevelSelectTrailTitleRt = trailTitleObj.AddComponent<RectTransform>();
             m_LevelSelectTrailTitleRt.anchorMin = new Vector2(0.5f, 1f);
             m_LevelSelectTrailTitleRt.anchorMax = new Vector2(0.5f, 1f);
             m_LevelSelectTrailTitleRt.pivot = new Vector2(0.5f, 0.5f);
-            m_LevelSelectTrailTitleRt.anchoredPosition = new Vector2(0f, -canvasHeight * (290f / 1376f));
-            m_LevelSelectTrailTitleRt.sizeDelta = new Vector2(640f, 85f);
+            m_LevelSelectTrailTitleRt.anchoredPosition = new Vector2(0f, -canvasHeight * (268f / 1376f));
+            m_LevelSelectTrailTitleRt.sizeDelta = new Vector2(820f, 140f);
 
             Font titleFont = (m_CandyFont != null) ? m_CandyFont : m_DefaultFont;
             const string titleString = "ADVENTURE TRAIL";
-            const int titleFontSize = 46;
-            const float archH = 15f;
-            const float rotF = 0.25f;
+            const int titleFontSize = 76;
+            const float archH = 13f;
+            const float rotF = 0.15f;
 
             // Layer 1: Deep 3D Chocolate Extruded Drop Shadow
-            GameObject shadowObj = CreateText(trailTitleObj.transform, new Vector2(0f, -4.5f), new Vector2(640f, 85f), titleString, titleFontSize, FontStyle.Normal, new Color(0.18f, 0.06f, 0.01f, 0.98f), TextAnchor.MiddleCenter, titleFont);
+            GameObject shadowObj = CreateText(trailTitleObj.transform, new Vector2(0f, -7f), new Vector2(820f, 140f), titleString, titleFontSize, FontStyle.Normal, new Color(0.18f, 0.06f, 0.01f, 0.98f), TextAnchor.MiddleCenter, titleFont);
             shadowObj.name = "TitleShadow_3D";
             CurvedTextEffect sCurve = shadowObj.AddComponent<CurvedTextEffect>();
             sCurve.archHeight = archH;
             sCurve.rotationFactor = rotF;
             Shadow sShadow = shadowObj.AddComponent<Shadow>();
-            sShadow.effectColor = new Color(0.10f, 0.02f, 0.0f, 0.90f);
-            sShadow.effectDistance = new Vector2(0f, -2.5f);
+            sShadow.effectColor = new Color(0.10f, 0.02f, 0.0f, 0.95f);
+            sShadow.effectDistance = new Vector2(0f, -4f);
 
             // Layer 2: Warm Burnt Caramel Bevel Extrusion
-            GameObject bevelObj = CreateText(trailTitleObj.transform, new Vector2(0f, -2f), new Vector2(640f, 85f), titleString, titleFontSize, FontStyle.Normal, new Color(0.60f, 0.22f, 0.02f, 1f), TextAnchor.MiddleCenter, titleFont);
+            GameObject bevelObj = CreateText(trailTitleObj.transform, new Vector2(0f, -3.5f), new Vector2(820f, 140f), titleString, titleFontSize, FontStyle.Normal, new Color(0.65f, 0.25f, 0.02f, 1f), TextAnchor.MiddleCenter, titleFont);
             bevelObj.name = "TitleBevel_3D";
             CurvedTextEffect bCurve = bevelObj.AddComponent<CurvedTextEffect>();
             bCurve.archHeight = archH;
             bCurve.rotationFactor = rotF;
 
-            // Layer 3: Radiant Golden Honey Sunburst Face with Vertical Specular Gradient
-            GameObject faceObj = CreateText(trailTitleObj.transform, Vector2.zero, new Vector2(640f, 85f), titleString, titleFontSize, FontStyle.Normal, Color.white, TextAnchor.MiddleCenter, titleFont);
+            // Layer 3: Radiant Golden Honey Face with Vertical Specular Gradient & Thick Cartoon Outline (matching BALL BLAST)
+            GameObject faceObj = CreateText(trailTitleObj.transform, Vector2.zero, new Vector2(820f, 140f), titleString, titleFontSize, FontStyle.Normal, Color.white, TextAnchor.MiddleCenter, titleFont);
             faceObj.name = "TitleFace_Gold";
             CurvedTextEffect fCurve = faceObj.AddComponent<CurvedTextEffect>();
             fCurve.archHeight = archH;
             fCurve.rotationFactor = rotF;
             fCurve.useGradient = true;
-            fCurve.topColor = new Color(1.0f, 0.98f, 0.76f, 1f);     // Pale luminous champagne gold highlight
-            fCurve.bottomColor = new Color(0.96f, 0.58f, 0.04f, 1f);  // Rich honey golden amber
+            fCurve.topColor = new Color(1.0f, 0.99f, 0.82f, 1f);     // Luminous pale lemon cream highlight
+            fCurve.bottomColor = new Color(0.98f, 0.60f, 0.02f, 1f);  // Warm vibrant golden amber
+            Outline faceOutline = faceObj.AddComponent<Outline>();
+            faceOutline.effectColor = new Color(0.24f, 0.08f, 0.02f, 1f); // Rich dark chocolate border
+            faceOutline.effectDistance = new Vector2(2.5f, -2.5f);
             Shadow fShadow = faceObj.AddComponent<Shadow>();
-            fShadow.effectColor = new Color(0.52f, 0.18f, 0.02f, 0.85f);
-            fShadow.effectDistance = new Vector2(0f, -1.8f);
+            fShadow.effectColor = new Color(0.45f, 0.16f, 0.02f, 0.90f);
+            fShadow.effectDistance = new Vector2(0f, -2f);
 
             // Sparkles on Golden Ribbon (Matching Sphere Blast aesthetic)
             Sprite sparkleSprite = SpriteFactory.GetSparkleShardSprite();
@@ -2866,7 +2895,7 @@ namespace BoxBlast
                 GameObject spkLeft = new GameObject("SparkleLeft");
                 spkLeft.transform.SetParent(trailTitleObj.transform, false);
                 RectTransform slRt = spkLeft.AddComponent<RectTransform>();
-                slRt.anchoredPosition = new Vector2(-255f, -4f);
+                slRt.anchoredPosition = new Vector2(-330f, -6f);
                 slRt.sizeDelta = new Vector2(28f, 28f);
                 Image slImg = spkLeft.AddComponent<Image>();
                 slImg.sprite = sparkleSprite;
@@ -2878,7 +2907,7 @@ namespace BoxBlast
                 GameObject spkRight = new GameObject("SparkleRight");
                 spkRight.transform.SetParent(trailTitleObj.transform, false);
                 RectTransform srRt = spkRight.AddComponent<RectTransform>();
-                srRt.anchoredPosition = new Vector2(255f, -4f);
+                srRt.anchoredPosition = new Vector2(330f, -6f);
                 srRt.sizeDelta = new Vector2(28f, 28f);
                 Image srImg = spkRight.AddComponent<Image>();
                 srImg.sprite = sparkleSprite;
@@ -2890,7 +2919,7 @@ namespace BoxBlast
                 GameObject spkCenter = new GameObject("SparkleCenter");
                 spkCenter.transform.SetParent(trailTitleObj.transform, false);
                 RectTransform scRt = spkCenter.AddComponent<RectTransform>();
-                scRt.anchoredPosition = new Vector2(0f, 22f);
+                scRt.anchoredPosition = new Vector2(0f, 26f);
                 scRt.sizeDelta = new Vector2(20f, 20f);
                 Image scImg = spkCenter.AddComponent<Image>();
                 scImg.sprite = sparkleSprite;
@@ -2898,63 +2927,7 @@ namespace BoxBlast
                 scImg.raycastTarget = false;
             }
 
-            // B. Ball Designs Button (Purple Royal pill with Wardrobe action)
-            GameObject wardrobeBtn = new GameObject("WardrobeButton");
-            wardrobeBtn.transform.SetParent(m_LevelSelectPanel.transform, false);
-            m_LevelSelectWardrobeRt = wardrobeBtn.AddComponent<RectTransform>();
-            m_LevelSelectWardrobeRt.anchorMin = new Vector2(0.5f, 1f);
-            m_LevelSelectWardrobeRt.anchorMax = new Vector2(0.5f, 1f);
-            m_LevelSelectWardrobeRt.pivot = new Vector2(0.5f, 0.5f);
-            m_LevelSelectWardrobeRt.anchoredPosition = new Vector2(128f, -canvasHeight * (365f / 1376f));
-            m_LevelSelectWardrobeRt.sizeDelta = new Vector2(235f, 52f);
-
-            Image wbImg = wardrobeBtn.AddComponent<Image>();
-            wbImg.sprite = SpriteFactory.GetPanelSprite(new Color(0.35f, 0.08f, 0.50f, 0.94f), new Color(0.85f, 0.50f, 1.0f, 0.95f), 2.5f, 22);
-            wbImg.raycastTarget = true;
-
-            GameObject wbTxtObj = CreateText(wardrobeBtn.transform, Vector2.zero, new Vector2(220f, 44f), "BALL DESIGNS", 22, FontStyle.Bold, Color.white, TextAnchor.MiddleCenter, titleFont);
-            Text wbText = wbTxtObj.GetComponent<Text>();
-            MakeTextCrisp(wbText, new Color(0.20f, 0.02f, 0.30f, 0.95f), 1.0f);
-
-            Button wbComp = wardrobeBtn.AddComponent<Button>();
-            wbComp.targetGraphic = wbImg;
-            wbComp.onClick.AddListener(() =>
-            {
-                if (m_IsLevelSelectTransitioning) return;
-                if (SoundManager.Instance != null) SoundManager.Instance.PlayButtonClick();
-                HapticManager.TriggerLight();
-                StartCoroutine(AnimateButtonPress(m_LevelSelectWardrobeRt, OpenSkinWardrobe));
-            });
-
-            // C. Dynamic Stars Badge (Gold/Sapphire pill with 3D star icon)
-            GameObject starsBadgeObj = new GameObject("StarsBadge");
-            starsBadgeObj.transform.SetParent(m_LevelSelectPanel.transform, false);
-            m_LevelSelectStarsRt = starsBadgeObj.AddComponent<RectTransform>();
-            m_LevelSelectStarsRt.anchorMin = new Vector2(0.5f, 1f);
-            m_LevelSelectStarsRt.anchorMax = new Vector2(0.5f, 1f);
-            m_LevelSelectStarsRt.pivot = new Vector2(0.5f, 0.5f);
-            m_LevelSelectStarsRt.anchoredPosition = new Vector2(-128f, -canvasHeight * (365f / 1376f));
-            m_LevelSelectStarsRt.sizeDelta = new Vector2(235f, 52f);
-
-            Image sbBg = starsBadgeObj.AddComponent<Image>();
-            sbBg.sprite = SpriteFactory.GetPanelSprite(new Color(0.06f, 0.12f, 0.26f, 0.92f), new Color(1.0f, 0.82f, 0.25f, 0.95f), 2.5f, 22);
-            sbBg.raycastTarget = false;
-
-            GameObject starIconObj = new GameObject("StarIcon");
-            starIconObj.transform.SetParent(starsBadgeObj.transform, false);
-            RectTransform siRt = starIconObj.AddComponent<RectTransform>();
-            siRt.anchorMin = new Vector2(0f, 0.5f);
-            siRt.anchorMax = new Vector2(0f, 0.5f);
-            siRt.pivot = new Vector2(0f, 0.5f);
-            siRt.anchoredPosition = new Vector2(12f, 0f);
-            siRt.sizeDelta = new Vector2(34f, 34f);
-            Image siImg = starIconObj.AddComponent<Image>();
-            siImg.sprite = GemIconFactory.GetStarSprite(true);
-            siImg.raycastTarget = false;
-
-            GameObject starsTxtObj = CreateText(starsBadgeObj.transform, new Vector2(16f, 0f), new Vector2(185f, 44f), "", 22, FontStyle.Bold, Color.white, TextAnchor.MiddleCenter, titleFont);
-            m_LevelSelectStarsText = starsTxtObj.GetComponent<Text>();
-            MakeTextCrisp(m_LevelSelectStarsText, new Color(0.02f, 0.05f, 0.16f, 0.95f), 1.0f);
+            // Buttons removed as requested: Clean Adventure Trail without Stars Badge or Ball Designs pills.
 
             // 3. Node Container for interactive level spheres & chests
             GameObject nodeContainer = new GameObject("NodeContainer");
@@ -2986,17 +2959,7 @@ namespace BoxBlast
             if (m_LevelSelectTrailTitleRt != null)
             {
                 m_LevelSelectTrailTitleRt.pivot = new Vector2(0.5f, 0.5f);
-                m_LevelSelectTrailTitleRt.anchoredPosition = new Vector2(0f, -canvasHeight * (290f / 1376f));
-            }
-            if (m_LevelSelectStarsRt != null)
-            {
-                m_LevelSelectStarsRt.pivot = new Vector2(0.5f, 0.5f);
-                m_LevelSelectStarsRt.anchoredPosition = new Vector2(-128f, -canvasHeight * (365f / 1376f));
-            }
-            if (m_LevelSelectWardrobeRt != null)
-            {
-                m_LevelSelectWardrobeRt.pivot = new Vector2(0.5f, 0.5f);
-                m_LevelSelectWardrobeRt.anchoredPosition = new Vector2(128f, -canvasHeight * (365f / 1376f));
+                m_LevelSelectTrailTitleRt.anchoredPosition = new Vector2(0f, -canvasHeight * (268f / 1376f));
             }
 
             int maxLvl = LevelManager.GetMaxLevel(mode);
@@ -4039,16 +4002,11 @@ namespace BoxBlast
             rt.anchorMin = Vector2.zero; rt.anchorMax = Vector2.one; rt.sizeDelta = Vector2.zero;
             rt.offsetMin = Vector2.zero; rt.offsetMax = Vector2.zero;
 
-            // Fullscreen backdrop matching background deep space navy
+            // Fullscreen backdrop matching background deep space navy (blocks raycasts to board)
             Image bg = m_VictoryModal.AddComponent<Image>();
             bg.color = new Color(0.04f, 0.07f, 0.16f, 0.98f);
             bg.raycastTarget = true;
-            Button bgBtn = m_VictoryModal.AddComponent<Button>();
-            bgBtn.transition = Selectable.Transition.None;
-            bgBtn.onClick.AddListener(() =>
-            {
-                if (m_VictoryModal != null) m_VictoryModal.SetActive(false);
-            });
+            // Backdrop intentionally does not dismiss on tap to prevent accidental closure into frozen state
 
             // Centered 3D Scene Viewport Card (768 x 1376 native aspect ratio matching Concept 1)
             GameObject sceneObj = new GameObject("VictorySceneCard", typeof(RectTransform));
@@ -4066,15 +4024,16 @@ namespace BoxBlast
             sceneImg.color = Color.white;
             sceneImg.raycastTarget = true;
 
-            // 2. Candy 3D Ruby Red Close (X) Button (placed directly over painted red X at X: 298, Y: 414)
+            // 2. Candy 3D Ruby Red Close (X) Button (placed directly over painted red X at X: 296, Y: 426)
             GameObject closeObj = new GameObject("VictoryCloseBtn", typeof(RectTransform));
             closeObj.transform.SetParent(sceneObj.transform, false);
             RectTransform closeRt = closeObj.GetComponent<RectTransform>();
-            closeRt.anchoredPosition = new Vector2(298f, 414f);
-            closeRt.sizeDelta = new Vector2(96f, 96f);
+            closeRt.anchoredPosition = new Vector2(296f, 426f);
+            closeRt.sizeDelta = new Vector2(90f, 90f);
 
             Image closeImg = closeObj.AddComponent<Image>();
-            closeImg.color = Color.clear;
+            closeImg.sprite = SpriteFactory.LoadOrFallbackSprite("Victory_Btn_CloseX");
+            closeImg.color = (closeImg.sprite != null) ? Color.white : Color.clear;
             closeImg.raycastTarget = true;
 
             Button closeBtn = closeObj.AddComponent<Button>();
@@ -4083,30 +4042,38 @@ namespace BoxBlast
                 StartCoroutine(AnimateButtonPress(closeRt, () =>
                 {
                     if (m_VictoryModal != null) m_VictoryModal.SetActive(false);
+                    if (LevelManager.Instance != null)
+                    {
+                        LevelManager.Instance.StopLevel();
+                        OpenLevelSelect(LevelManager.Instance.CurrentMode);
+                    }
+                    else
+                    {
+                        OpenModeSelect();
+                    }
                 }));
             });
             closeObj.transform.SetAsLastSibling();
 
-            // 3. Subtitle Text Pill ("Earned 3 Stars! Level X Unlocked")
+            // 3. Subtitle Text Pill ("Earned 3 Stars! Level X Unlocked") inside golden ribbon banner
             GameObject subPillObj = new GameObject("SubtitlePill", typeof(RectTransform));
             subPillObj.transform.SetParent(sceneObj.transform, false);
             RectTransform spRt = subPillObj.GetComponent<RectTransform>();
-            spRt.anchoredPosition = new Vector2(0, -32);
-            spRt.sizeDelta = new Vector2(580, 52);
+            spRt.anchoredPosition = new Vector2(0f, -61f);
+            spRt.sizeDelta = new Vector2(460f, 60f);
             Image spImg = subPillObj.AddComponent<Image>();
-            spImg.sprite = SpriteFactory.GetPanelSprite(new Color(0.05f, 0.14f, 0.35f, 0.98f), new Color(0.35f, 0.65f, 1f, 0.90f), 2f, 16);
-            spImg.type = Image.Type.Sliced;
+            spImg.color = Color.clear; // Golden ribbon is already illustrated on the artwork
             spImg.raycastTarget = false;
 
-            GameObject subObj = CreateText(subPillObj.transform, Vector2.zero, new Vector2(560, 48), "", 26, FontStyle.Normal, new Color(1.0f, 0.95f, 0.82f), TextAnchor.MiddleCenter, m_CandyFont);
+            GameObject subObj = CreateText(subPillObj.transform, Vector2.zero, new Vector2(440f, 50f), "", 22, FontStyle.Bold, new Color(0.25f, 0.12f, 0.02f), TextAnchor.MiddleCenter, m_CandyFont);
             m_VictorySubtitleText = subObj.GetComponent<Text>();
-            MakeTextCrisp(m_VictorySubtitleText, new Color(0.02f, 0.06f, 0.20f, 0.95f), 1.0f);
+            MakeTextCrisp(m_VictorySubtitleText, new Color(1.0f, 0.92f, 0.70f, 0.85f), 0.5f);
 
             // 4. Ball Skin Reward Showcase Card (Appears when an Adventure level awards a new ball design!)
             m_VictorySkinRewardObj = new GameObject("SkinRewardCard", typeof(RectTransform));
             m_VictorySkinRewardObj.transform.SetParent(sceneObj.transform, false);
             RectTransform rwRt = m_VictorySkinRewardObj.GetComponent<RectTransform>();
-            rwRt.anchoredPosition = new Vector2(0, 45);
+            rwRt.anchoredPosition = new Vector2(0, 50);
             rwRt.sizeDelta = new Vector2(560, 84);
             Image rwBg = m_VictorySkinRewardObj.AddComponent<Image>();
             rwBg.sprite = SpriteFactory.GetPanelSprite(new Color(0.10f, 0.18f, 0.38f, 0.98f), new Color(0.35f, 0.65f, 1f, 1f), 2f, 16);
@@ -4132,9 +4099,9 @@ namespace BoxBlast
             m_VictorySkinEquipBtnText = equipBtn.GetComponentInChildren<Text>();
             m_VictorySkinRewardObj.SetActive(false);
 
-            // 5. 3D Arcade Buttons Overlays (placed directly on top of the 3D buttons in the artwork)
-            // Button 1: NEXT LEVEL (Green button at Y: -108)
-            m_VictoryNextBtnObj = CreateTransparentButton(sceneObj.transform, new Vector2(0, -108), new Vector2(420, 84), () =>
+            // 5. 3D Arcade Buttons (2x2 Grid Layout matching Concept 2)
+            // Button 1: NEXT LEVEL (Green button at Top-Left X: -126, Y: -248)
+            m_VictoryNextBtnObj = CreateVictoryButton(sceneObj.transform, new Vector2(-126f, -248f), new Vector2(216f, 114f), () =>
             {
                 m_VictoryModal.SetActive(false);
                 if (LevelManager.Instance != null)
@@ -4144,8 +4111,23 @@ namespace BoxBlast
                 UpdateHUDVisibility();
             }, "Victory_Btn_NextLevel");
 
-            // Button 2: LEVEL SELECT (Blue button at Y: -205)
-            CreateTransparentButton(sceneObj.transform, new Vector2(0, -205), new Vector2(420, 84), () =>
+            // Disabled overlay for Level 40 / final level
+            GameObject nextDisabledObj = new GameObject("Victory_NextBtn_DisabledOverlay");
+            nextDisabledObj.transform.SetParent(sceneObj.transform, false);
+            RectTransform ndRt = nextDisabledObj.AddComponent<RectTransform>();
+            ndRt.anchoredPosition = new Vector2(-126f, -248f);
+            ndRt.sizeDelta = new Vector2(216f, 114f);
+            Image ndImg = nextDisabledObj.AddComponent<Image>();
+            ndImg.sprite = SpriteFactory.GetPillSprite(new Color(0.04f, 0.08f, 0.16f, 0.72f));
+            ndImg.type = Image.Type.Sliced;
+            ndImg.raycastTarget = true;
+            GameObject ndTxtObj = CreateText(nextDisabledObj.transform, Vector2.zero, new Vector2(200, 50), "COMPLETED", 20, FontStyle.Bold, new Color(0.75f, 0.82f, 0.95f, 0.88f), TextAnchor.MiddleCenter, m_CandyFont);
+            MakeTextCrisp(ndTxtObj.GetComponent<Text>(), new Color(0.02f, 0.04f, 0.10f, 0.95f), 1.0f);
+            m_VictoryNextDisabledOverlay = nextDisabledObj;
+            m_VictoryNextDisabledOverlay.SetActive(false);
+
+            // Button 2: LEVEL SELECT (Blue button at Top-Right X: 124, Y: -248)
+            CreateVictoryButton(sceneObj.transform, new Vector2(124f, -248f), new Vector2(216f, 114f), () =>
             {
                 m_VictoryModal.SetActive(false);
                 if (LevelManager.Instance != null)
@@ -4155,15 +4137,15 @@ namespace BoxBlast
                 }
             }, "Victory_Btn_LevelSelect");
 
-            // Button 3: BALL DESIGNS (Purple button at Y: -294)
-            CreateTransparentButton(sceneObj.transform, new Vector2(0, -294), new Vector2(420, 80), () =>
+            // Button 3: BALL DESIGNS (Purple button at Bottom-Left X: -126, Y: -410)
+            CreateVictoryButton(sceneObj.transform, new Vector2(-126f, -410f), new Vector2(216f, 114f), () =>
             {
                 m_VictoryModal.SetActive(false);
                 OpenSkinWardrobe();
             }, "Victory_Btn_BallDesigns");
 
-            // Button 4: HOME (Orange button at Y: -388)
-            CreateTransparentButton(sceneObj.transform, new Vector2(0, -388), new Vector2(420, 82), () =>
+            // Button 4: HOME (Orange button at Bottom-Right X: 124, Y: -410)
+            CreateVictoryButton(sceneObj.transform, new Vector2(124f, -410f), new Vector2(216f, 114f), () =>
             {
                 m_VictoryModal.SetActive(false);
                 if (LevelManager.Instance != null) LevelManager.Instance.StopLevel();
@@ -4171,6 +4153,28 @@ namespace BoxBlast
             }, "Victory_Btn_Home");
 
             m_VictoryModal.SetActive(false);
+        }
+
+        private GameObject CreateVictoryButton(Transform parent, Vector2 anchoredPos, Vector2 size, System.Action onClick, string name = "Button")
+        {
+            GameObject obj = new GameObject(name);
+            obj.transform.SetParent(parent, false);
+            RectTransform rt = obj.AddComponent<RectTransform>();
+            rt.anchoredPosition = anchoredPos;
+            rt.sizeDelta = size;
+
+            Image img = obj.AddComponent<Image>();
+            img.sprite = SpriteFactory.LoadOrFallbackSprite(name);
+            img.color = (img.sprite != null) ? Color.white : Color.clear;
+            img.raycastTarget = true;
+
+            Button btn = obj.AddComponent<Button>();
+            btn.onClick.AddListener(() =>
+            {
+                StartCoroutine(AnimateButtonPress(rt, onClick));
+            });
+
+            return obj;
         }
 
         private GameObject CreateTransparentButton(Transform parent, Vector2 anchoredPos, Vector2 size, System.Action onClick, string name = "Button")
