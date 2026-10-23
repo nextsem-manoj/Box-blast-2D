@@ -1765,6 +1765,105 @@ namespace BoxBlast
         }
 
         /// <summary>
+        /// 3D glossy emerald green circular checkmark badge with crisp white tick
+        /// used for completed level goals, achievements, and HUD task completions.
+        /// </summary>
+        public static Sprite GetGreenCheckmarkBadgeSprite()
+        {
+            const string key = "Badge_GreenCheckmark_3D_HD";
+            if (s_SpriteCache.TryGetValue(key, out Sprite cached) && cached != null && cached.texture != null) return cached;
+
+            int size = 128;
+            Texture2D tex = CreateCrispTexture(size, size);
+            Color[] pixels = new Color[size * size];
+
+            float center = (size - 1) * 0.5f;
+            float outerRadius = (size - 12) * 0.5f;
+            float innerRadius = outerRadius - 6f;
+
+            // Checkmark geometry
+            Vector2 pA = new Vector2(center - 22f, center - 2f);
+            Vector2 pB = new Vector2(center - 6f, center - 18f);
+            Vector2 pC = new Vector2(center + 24f, center + 18f);
+            float strokeRadius = 5.5f;
+
+            Color rimLight   = new Color(0.65f, 1.0f, 0.70f, 1.0f);
+            Color rimDark    = new Color(0.08f, 0.45f, 0.18f, 1.0f);
+            Color gradTop    = new Color(0.20f, 0.88f, 0.38f, 1.0f);
+            Color gradBot    = new Color(0.06f, 0.65f, 0.22f, 1.0f);
+            Color tickCol    = Color.white;
+            Color tickShadow = new Color(0.02f, 0.28f, 0.10f, 0.75f);
+
+            for (int y = 0; y < size; y++)
+            {
+                for (int x = 0; x < size; x++)
+                {
+                    Vector2 pt = new Vector2(x, y);
+                    float dx = x - center;
+                    float dy = y - center;
+                    float dist = Mathf.Sqrt(dx * dx + dy * dy);
+
+                    if (dist > outerRadius + 1.5f)
+                    {
+                        pixels[y * size + x] = Color.clear;
+                        continue;
+                    }
+
+                    float alpha = Mathf.Clamp01((outerRadius - dist) + 0.5f);
+                    float ny = (y - (center - outerRadius)) / (outerRadius * 2f);
+                    Color baseCol = Color.Lerp(gradBot, gradTop, ny);
+
+                    // Spherical gloss highlight
+                    float specDist = Vector2.Distance(pt, new Vector2(center - 10f, center + 18f));
+                    if (specDist < outerRadius * 0.65f)
+                    {
+                        float spec = 1f - (specDist / (outerRadius * 0.65f));
+                        baseCol = Color.Lerp(baseCol, Color.white, spec * 0.35f);
+                    }
+
+                    // Outer rim ring
+                    if (dist > innerRadius)
+                    {
+                        float rimT = (dist - innerRadius) / (outerRadius - innerRadius);
+                        Color rimCol = (ny > 0.45f) ? rimLight : rimDark;
+                        baseCol = Color.Lerp(baseCol, rimCol, rimT * 0.9f);
+                    }
+
+                    // Checkmark shadow
+                    Vector2 shadowPt = new Vector2(x, y + 2.5f);
+                    float dShadow1 = DistToSegment(shadowPt, pA, pB);
+                    float dShadow2 = DistToSegment(shadowPt, pB, pC);
+                    float dShadow = Mathf.Min(dShadow1, dShadow2);
+                    if (dShadow < strokeRadius + 2.0f)
+                    {
+                        float sAlpha = Mathf.Clamp01((strokeRadius + 2.0f - dShadow) / 2.0f) * 0.65f;
+                        baseCol = Color.Lerp(baseCol, tickShadow, sAlpha);
+                    }
+
+                    // Crisp checkmark tick
+                    float dTick1 = DistToSegment(pt, pA, pB);
+                    float dTick2 = DistToSegment(pt, pB, pC);
+                    float dTick = Mathf.Min(dTick1, dTick2);
+                    if (dTick < strokeRadius)
+                    {
+                        float tAlpha = Mathf.Clamp01((strokeRadius - dTick) * 1.5f);
+                        baseCol = Color.Lerp(baseCol, tickCol, tAlpha);
+                    }
+
+                    baseCol.a *= alpha;
+                    pixels[y * size + x] = baseCol;
+                }
+            }
+
+            tex.SetPixels(pixels);
+            tex.Apply(true, false);
+
+            Sprite sprite = Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 100f);
+            s_SpriteCache[key] = sprite;
+            return sprite;
+        }
+
+        /// <summary>
         /// 3D Pixar-style Golden Embossed Modal Panel with double golden bevel rim
         /// and deep cosmic royal blue glass interior. 9-slice compatible.
         /// </summary>

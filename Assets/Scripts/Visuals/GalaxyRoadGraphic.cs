@@ -13,11 +13,31 @@ namespace BoxBlast
     public class GalaxyRoadGraphic : MaskableGraphic
     {
         [SerializeField] private int m_TotalLevels = 40;
-        [SerializeField] private float m_StepY = 88f;
-        [SerializeField] private float m_StartY = 88f;
+        [SerializeField] private float m_StepY = 92f;
+        [SerializeField] private float m_StartY = 130f;
         [SerializeField] private float m_Amplitude = 175f;
         [SerializeField] private float m_Frequency = 0.7853982f;
-        [SerializeField] private float m_PhaseOffset = -1.5707963f;
+        [SerializeField] private float m_PhaseOffset = 1.5707963f;
+
+        public float TotalContentHeight => m_StartY * 2f + (m_TotalLevels - 1) * m_StepY;
+
+        public Vector2 GetLevelPosition(int level)
+        {
+            float lvlFrac = level;
+            float wave = (lvlFrac - 1f) * m_Frequency + m_PhaseOffset;
+            float px = Mathf.Sin(wave) * m_Amplitude;
+            float py = m_StartY + (lvlFrac - 1f) * m_StepY;
+            return new Vector2(px, py);
+        }
+
+        public Vector2 GetLevelNormal(int level)
+        {
+            float lvlFrac = level;
+            float wave = (lvlFrac - 1f) * m_Frequency + m_PhaseOffset;
+            float dx = Mathf.Cos(wave) * m_Frequency * m_Amplitude;
+            float dy = m_StepY;
+            return new Vector2(-dy, dx).normalized;
+        }
 
         public void Setup(int totalLevels, float stepY, float startY, float amplitude, float frequency, float phaseOffset)
         {
@@ -38,15 +58,16 @@ namespace BoxBlast
             int samples = (m_TotalLevels - 1) * 20;
             if (samples < 20) samples = 20;
 
-            Color glowOuter = new Color(0.08f, 0.65f, 1.0f, 0f);
-            Color glowInner = new Color(0.12f, 0.75f, 1.0f, 0.50f);
-            Color bodyColor = new Color(0.16f, 0.88f, 1.0f, 0.95f);
-            Color coreColor = new Color(0.96f, 1.0f, 1.0f, 0.98f);
+            // Rich warm 3D Golden Road Highway Palette
+            Color glowOuter = new Color(0.95f, 0.65f, 0.10f, 0f);
+            Color glowInner = new Color(1.0f, 0.78f, 0.20f, 0.45f);
+            Color bodyColor = new Color(0.96f, 0.80f, 0.25f, 0.98f);
+            Color coreColor = new Color(1.0f, 0.98f, 0.85f, 1.0f);
 
-            float wGlow = 42f;
-            float wOuter = 25f;
-            float wBody = 15f;
-            float wCore = 5f;
+            float wGlow = 46f;
+            float wOuter = 30f;
+            float wBody = 20f;
+            float wCore = 7f;
 
             for (int i = 0; i <= samples; i++)
             {

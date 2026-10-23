@@ -21,8 +21,9 @@ public static class ForceReloadDomain
     {
         EditorSettings.enterPlayModeOptionsEnabled = false;
         EditorSettings.enterPlayModeOptions = EnterPlayModeOptions.None;
+        UnityEditor.Compilation.CompilationPipeline.RequestScriptCompilation();
         EditorUtility.RequestScriptReload();
-        Debug.Log("[BoxBlast] Requested Script Reload!");
+        Debug.Log("[BoxBlast] Requested Script Compilation & Reload!");
     }
 }
 #endif
