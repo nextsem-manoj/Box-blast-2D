@@ -45,6 +45,11 @@ namespace BoxBlast
 
             EnsureGemObject();
             SetGem(gem);
+
+            if (Visuals3D.Visual3DManager.Instance != null && Visuals3D.Visual3DManager.Instance.Is3DActive)
+            {
+                Visuals3D.Visual3DManager.Instance.Apply3DBlockVisual(gameObject, color);
+            }
         }
 
         private void EnsureGemObject()
@@ -73,6 +78,10 @@ namespace BoxBlast
                 }
                 m_GemRenderer.sprite = GemIconFactory.GetGemSprite(gem);
                 m_GemObj.SetActive(true);
+                if (Visuals3D.Visual3DManager.Instance != null && Visuals3D.Visual3DManager.Instance.Is3DActive)
+                {
+                    Visuals3D.Visual3DManager.Instance.Apply3DGemVisual(m_GemObj, gem);
+                }
             }
             else
             {

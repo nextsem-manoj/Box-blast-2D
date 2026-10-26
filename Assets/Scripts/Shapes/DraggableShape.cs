@@ -247,8 +247,9 @@ namespace BoxBlast
             m_CurrentScale = Mathf.Lerp(m_CurrentScale, m_BoardScale, 1f - Mathf.Exp(-24f * dt));
             transform.localScale = Vector3.one * m_CurrentScale;
 
-            // 3. Jitter-free high-frequency finger tracking (zero lag, filters digitizer noise)
-            Vector3 targetPos = new Vector3(pointerWorld.x, pointerWorld.y + m_CurrentLiftOffset, 0f);
+            // 3. Jitter-free high-frequency finger tracking with dynamic 3D lift
+            float zDepth = (Visuals3D.Visual3DManager.Instance != null && Visuals3D.Visual3DManager.Instance.Is3DActive) ? -0.75f : 0f;
+            Vector3 targetPos = new Vector3(pointerWorld.x, pointerWorld.y + m_CurrentLiftOffset, zDepth);
             Vector3 newPos = Vector3.Lerp(transform.position, targetPos, 1f - Mathf.Exp(-55f * dt));
 
             // 4. Subtle dynamic physical tilt based on horizontal drag velocity
@@ -257,7 +258,9 @@ namespace BoxBlast
 
             float targetAngle = -Mathf.Clamp(velocity.x * 0.45f, -7.5f, 7.5f);
             m_CurrentZAngle = Mathf.Lerp(m_CurrentZAngle, targetAngle, 1f - Mathf.Exp(-18f * dt));
-            transform.rotation = Quaternion.Euler(0f, 0f, m_CurrentZAngle);
+            float pitch = (Visuals3D.Visual3DManager.Instance != null && Visuals3D.Visual3DManager.Instance.Is3DActive) ? Mathf.Clamp(-velocity.y * 0.2f, -5f, 5f) : 0f;
+            float roll = (Visuals3D.Visual3DManager.Instance != null && Visuals3D.Visual3DManager.Instance.Is3DActive) ? Mathf.Clamp(velocity.x * 0.2f, -5f, 5f) : 0f;
+            transform.rotation = Quaternion.Euler(pitch, roll, m_CurrentZAngle);
 
             transform.position = newPos;
 

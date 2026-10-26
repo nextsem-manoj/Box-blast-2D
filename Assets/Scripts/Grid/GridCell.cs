@@ -167,10 +167,19 @@ namespace BoxBlast
             }
             m_BlockObj.SetActive(true);
 
+            if (Visuals3D.Visual3DManager.Instance != null && Visuals3D.Visual3DManager.Instance.Is3DActive)
+            {
+                Visuals3D.Visual3DManager.Instance.Apply3DBlockVisual(m_BlockObj, color);
+            }
+
             if (gem != GemType.None && m_GemRenderer != null)
             {
                 m_GemRenderer.sprite = GemIconFactory.GetGemSprite(gem);
                 m_GemObj.SetActive(true);
+                if (Visuals3D.Visual3DManager.Instance != null && Visuals3D.Visual3DManager.Instance.Is3DActive)
+                {
+                    Visuals3D.Visual3DManager.Instance.Apply3DGemVisual(m_GemObj, gem);
+                }
             }
             else if (m_GemObj != null)
             {
