@@ -258,6 +258,10 @@ namespace BoxBlast
             if (m_LevelHUD != null) m_LevelHUD.SetActive(false);
             if (m_VictoryModal != null) m_VictoryModal.SetActive(false);
             if (m_DefeatModal != null) m_DefeatModal.SetActive(false);
+            if (m_HomeTourModalObj != null) m_HomeTourModalObj.SetActive(false);
+
+            PlayerPrefs.SetInt("BoxBlast_HomeTour_Seen", 1);
+            PlayerPrefs.Save();
 
             // Open Home Page immediately on game start per user request
             OpenModeSelect();
@@ -1143,15 +1147,14 @@ namespace BoxBlast
                 }));
             });
             settingsCloseObj.transform.SetAsLastSibling();
+            // 3. Sound Toggle (X: 154, Y: 178, Size: 142 x 64)
+            CreateConcept2Toggle(sceneObj.transform, new Vector2(154f, 178f), new Vector2(142f, 64f), OnToggleSfxClicked, out m_SfxToggleTrackImg);
 
-            // 3. Sound Toggle (X: 152.5, Y: 183)
-            CreateConcept2Toggle(sceneObj.transform, new Vector2(152.5f, 183f), new Vector2(138f, 68f), OnToggleSfxClicked, out m_SfxToggleTrackImg);
+            // 4. Music Toggle (X: 154, Y: 36, Size: 142 x 64)
+            CreateConcept2Toggle(sceneObj.transform, new Vector2(154f, 36f), new Vector2(142f, 64f), OnToggleMusicClicked, out m_MusicToggleTrackImg);
 
-            // 4. Music Toggle (X: 152.5, Y: 39.5)
-            CreateConcept2Toggle(sceneObj.transform, new Vector2(152.5f, 39.5f), new Vector2(138f, 68f), OnToggleMusicClicked, out m_MusicToggleTrackImg);
-
-            // 5. Vibration Toggle (X: 152.5, Y: -107.5)
-            CreateConcept2Toggle(sceneObj.transform, new Vector2(152.5f, -107.5f), new Vector2(138f, 68f), OnToggleHapticsClicked, out m_HapticToggleTrackImg);
+            // 5. Vibration Toggle (X: 154, Y: -110, Size: 142 x 64)
+            CreateConcept2Toggle(sceneObj.transform, new Vector2(154f, -110f), new Vector2(142f, 64f), OnToggleHapticsClicked, out m_HapticToggleTrackImg);
 
             // 6. Ball Designs Button (X: 0, Y: -262, Size: 384 x 86)
             CreateConcept2Button(sceneObj.transform, new Vector2(0f, -262f), new Vector2(384f, 86f), "Settings_Btn_BallDesigns", () =>
@@ -1556,9 +1559,9 @@ namespace BoxBlast
             }
             UpdateHUDVisibility();
 
-            if (PlayerPrefs.GetInt("BoxBlast_HomeTour_Seen", 0) == 0)
+            if (m_HomeTourModalObj != null)
             {
-                StartCoroutine(DelayedShowHomeTour(0.35f));
+                m_HomeTourModalObj.SetActive(false);
             }
         }
 
@@ -5682,31 +5685,16 @@ namespace BoxBlast
 
         public void ShowHomeFeatureTour(bool force = false)
         {
-            if (!force && PlayerPrefs.GetInt("BoxBlast_HomeTour_Seen", 0) == 1) return;
-
-            if (m_HomeTourModalObj == null)
+            if (m_HomeTourModalObj != null)
             {
-                BuildHomeFeatureTourModal();
+                m_HomeTourModalObj.SetActive(false);
             }
-
-            if (m_HomeTourModalObj == null) return;
-
-            m_CurrentTourStep = 0;
-            m_HomeTourModalObj.SetActive(true);
-            m_HomeTourModalObj.transform.SetAsLastSibling();
-            UpdateTourStepUI();
-
-            if (SoundManager.Instance != null) SoundManager.Instance.PlayTutorialPrompt();
-            HapticManager.TriggerLight();
+            return;
         }
 
         private System.Collections.IEnumerator DelayedShowHomeTour(float delay)
         {
-            yield return new WaitForSecondsRealtime(delay);
-            if (m_ModeSelectPanel != null && m_ModeSelectPanel.activeSelf)
-            {
-                ShowHomeFeatureTour(false);
-            }
+            yield break;
         }
 
         private void BuildHomeFeatureTourModal()
