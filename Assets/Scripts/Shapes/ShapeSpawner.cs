@@ -74,6 +74,32 @@ namespace BoxBlast
             CreateSlotBoxes();
         }
 
+        private void OnEnable()
+        {
+            SkinManager.OnSkinChanged += HandleSkinChanged;
+        }
+
+        private void OnDisable()
+        {
+            SkinManager.OnSkinChanged -= HandleSkinChanged;
+        }
+
+        private void HandleSkinChanged(BallSkinType newSkin)
+        {
+            RefreshAllSlotShapesSprites();
+        }
+
+        public void RefreshAllSlotShapesSprites()
+        {
+            for (int i = 0; i < m_SlotShapes.Length; i++)
+            {
+                if (m_SlotShapes[i] != null)
+                {
+                    m_SlotShapes[i].RefreshSprites();
+                }
+            }
+        }
+
         private void OnDestroy()
         {
             if (Instance == this) Instance = null;
@@ -135,8 +161,8 @@ namespace BoxBlast
 
         public void UpdateLayout(bool isLandscape)
         {
-            m_IsLandscape = isLandscape;
-            m_CurrentSlotPositions = isLandscape ? m_LandscapePositions : GetPortraitPositions();
+            m_IsLandscape = false;
+            m_CurrentSlotPositions = GetPortraitPositions();
             float bowlScale = GetBowlScale();
 
             CreateSlotBoxes();

@@ -134,6 +134,7 @@ namespace BoxBlast
         private RectTransform m_LevelSelectTrailTitleRt;
         private Image m_LevelSelectStarsPillImg;
         private Text m_AdventureFooterText;
+        private Text m_AdventureChapterText;
         private Text m_ModeCardAdvStarsText;
         private Text m_ModeCardEventStarsText;
         private Text m_ModeCardTaskStarsText;
@@ -166,6 +167,9 @@ namespace BoxBlast
         private RectTransform m_NextChapterSideRt;
         private Text m_NextChapterSideText;
 #pragma warning restore 0414
+        private int m_JustCompletedLevel = 0;
+        private GameModeType m_JustCompletedMode = GameModeType.Adventure;
+        private Coroutine m_AdvanceAnimationCoroutine = null;
 
         // Shop Coin Balance Text
         private Text m_ShopCoinsText;
@@ -531,6 +535,24 @@ namespace BoxBlast
             if (m_VictoryModal != null && m_VictoryModal.activeSelf)
             {
                 Transform scene = m_VictoryModal.transform.Find("VictorySceneCard");
+                if (scene != null)
+                {
+                    float canvasHeight = isLandscape ? 1080f : 1920f;
+                    float canvasWidth = isLandscape ? 1920f : 1080f;
+                    if (m_RootCanvas != null)
+                    {
+                        RectTransform cRt = m_RootCanvas.GetComponent<RectTransform>();
+                        if (cRt != null && cRt.rect.height > 0) canvasHeight = cRt.rect.height;
+                        if (cRt != null && cRt.rect.width > 0) canvasWidth = cRt.rect.width;
+                    }
+                    float fitScale = canvasHeight / 1376f;
+                    if (768f * fitScale > canvasWidth) fitScale = canvasWidth / 768f;
+                    scene.localScale = new Vector3(fitScale, fitScale, 1f);
+                }
+            }
+            if (m_LevelSelectPanel != null && m_LevelSelectPanel.activeSelf)
+            {
+                Transform scene = m_LevelSelectPanel.transform.Find("AdventureSceneCard");
                 if (scene != null)
                 {
                     float canvasHeight = isLandscape ? 1080f : 1920f;
@@ -1475,24 +1497,14 @@ namespace BoxBlast
             }
 
             m_ActiveViewingMode = mode;
-            int maxLvl = LevelManager.GetMaxLevel(mode);
-            int activeLevel = 1;
-            for (int l = 1; l <= maxLvl; l++)
-            {
-                if (LevelManager.IsLevelUnlocked(mode, l))
-                {
-                    activeLevel = l;
-                    if (LevelManager.GetLevelStars(mode, l) == 0)
-                    {
-                        break;
-                    }
-                }
-                else break;
-            }
-            m_LevelSelectPage = 0;
+            int currentPlayLevel = GetCurrentPlayLevel(mode);
+            int maxPage = (LevelManager.GetMaxLevel(mode) - 1) / 20;
+            m_LevelSelectPage = Mathf.Clamp((currentPlayLevel - 1) / 20, 0, maxPage);
+
             RefreshLevelSelectGrid(mode);
             if (m_LevelSelectPanel != null)
             {
+                if (m_ModeSelectPanel != null) m_ModeSelectPanel.SetActive(false); // Hide home screen background
                 m_LevelSelectPanel.SetActive(true);
                 m_LevelSelectPanel.transform.SetAsLastSibling();
 
@@ -1508,18 +1520,20 @@ namespace BoxBlast
                         if (cRt != null && cRt.rect.width > 0) canvasWidth = cRt.rect.width;
                     }
                     float fitScale = canvasHeight / 1376f;
-                    if (768f * fitScale > canvasWidth)
-                    {
-                        fitScale = canvasWidth / 768f;
-                    }
+                    if (768f * fitScale > canvasWidth) fitScale = canvasWidth / 768f;
                     scene.localScale = new Vector3(fitScale, fitScale, 1f);
-
-                    StopCoroutine("AnimateModalOpen");
-                    StartCoroutine(AnimateModalOpen(scene.GetComponent<RectTransform>(), fitScale));
                 }
             }
-            ScrollToActiveLevel(mode);
             UpdateHUDVisibility();
+
+            // When a level was just completed: advance / move forward to next level!
+            if (m_JustCompletedLevel > 0)
+            {
+                int prevLvl = m_JustCompletedLevel;
+                int nextLvl = Mathf.Min(LevelManager.GetMaxLevel(mode), prevLvl + 1);
+                m_JustCompletedLevel = 0;
+                StartCoroutine(DelayedTriggerAdvance(prevLvl, nextLvl));
+            }
         }
 
         public void OpenModeSelect()
@@ -1995,6 +2009,8 @@ namespace BoxBlast
 
         public void ShowLevelCompleteModal(GameModeType mode, int levelNum, int stars, bool hasNextLevel, SkinInfo unlockedSkin = null)
         {
+            m_JustCompletedLevel = levelNum;
+            m_JustCompletedMode = mode;
             if (m_VictoryModal == null) BuildVictoryModal();
             if (m_VictoryModal != null)
             {
@@ -2756,315 +2772,39 @@ namespace BoxBlast
             return list;
         }
 
-        private void BuildLevelSelectScreen()
+        private static readonly Vector2[] AdventurePathWaypoints = new Vector2[]
         {
-            if (m_LevelSelectPanel != null)
-            {
-                Destroy(m_LevelSelectPanel);
-                m_LevelSelectPanel = null;
-            }
+            new Vector2( 164f, -400f), // Lvl 1 / 21: Start of Golden Road at Bottom-Right
+            new Vector2(  45f, -370f), // Lvl 2 / 22: Winding leftward
+            new Vector2( -65f, -350f), // Lvl 3 / 23: Continuing leftward along golden ribbon
+            new Vector2(-165f, -315f), // Lvl 4 / 24: Curving into left loop
+            new Vector2(-192f, -270f), // Lvl 5 / 25: Outer Left Apex of Loop 1
+            new Vector2(-140f, -225f), // Lvl 6 / 26: Climbing up out of Loop 1
+            new Vector2( -35f, -205f), // Lvl 7 / 27: Crossing center towards right
+            new Vector2(  65f, -190f), // Lvl 8 / 28: Continuing rightward
+            new Vector2( 160f, -170f), // Lvl 9 / 29: Approaching right curve
+            new Vector2( 205f, -125f), // Lvl 10 / 30: Outer Right Apex of Loop 2
+            new Vector2( 105f,  -85f), // Lvl 11 / 31: Curving leftward above Milestone Chest 1
+            new Vector2( -10f,  -65f), // Lvl 12 / 32: Crossing center leftward across galaxy swirl
+            new Vector2(-120f,  -45f), // Lvl 13 / 33: Approaching left curve
+            new Vector2(-175f,  -10f), // Lvl 14 / 34: Outer Left Apex of Loop 3
+            new Vector2(-135f,   35f), // Lvl 15 / 35: Climbing up out of Loop 3
+            new Vector2( -15f,   55f), // Lvl 16 / 36: Crossing center rightward
+            new Vector2( 110f,   75f), // Lvl 17 / 37: Continuing rightward
+            new Vector2( 165f,  115f), // Lvl 18 / 38: Outer Right Apex of Loop 4
+            new Vector2(  40f,  155f), // Lvl 19 / 39: Curving leftward
+            new Vector2( -15f,  215f)  // Lvl 20 / 40: Summit Approach before Grand Milestone Chest
+        };
 
-            m_LevelSelectPanel = new GameObject("LevelSelectPanel");
-            m_LevelSelectPanel.transform.SetParent(m_RootCanvas, false);
-            RectTransform rt = m_LevelSelectPanel.AddComponent<RectTransform>();
-            rt.anchorMin = Vector2.zero; rt.anchorMax = Vector2.one; rt.sizeDelta = Vector2.zero;
-
-            // 1. Cosmic Navy Backdrop outside card
-            Image mapBg = m_LevelSelectPanel.AddComponent<Image>();
-            Sprite spaceBg = SpriteFactory.LoadOrFallbackSprite("HomeBackground_Concept3");
-            if (spaceBg != null)
-            {
-                mapBg.sprite = spaceBg;
-                mapBg.color = Color.white;
-            }
-            else
-            {
-                mapBg.color = new Color(0.04f, 0.07f, 0.16f, 1f);
-            }
-
-            float canvasHeight = 1920f;
-            float canvasWidth = 1080f;
-            if (m_RootCanvas != null)
-            {
-                RectTransform canvasRt = m_RootCanvas.GetComponent<RectTransform>();
-                if (canvasRt != null && canvasRt.rect.height > 0) canvasHeight = canvasRt.rect.height;
-                if (canvasRt != null && canvasRt.rect.width > 0) canvasWidth = canvasRt.rect.width;
-            }
-
-            // Safe Area calculations for notch / status bar
-            float safeTop = 0f;
-            float safeLeft = 0f;
-            if (Screen.height > 0 && Screen.width > 0)
-            {
-                Rect safeArea = Screen.safeArea;
-                float topPixels = Screen.height - (safeArea.y + safeArea.height);
-                float leftPixels = safeArea.x;
-                safeTop = (topPixels / Screen.height) * canvasHeight;
-                safeLeft = (leftPixels / Screen.width) * 1080f;
-            }
-
-            // 2. Main Adventure Scene Card (768 x 1376 native aspect ratio)
-            GameObject sceneCard = new GameObject("AdventureSceneCard");
-            sceneCard.transform.SetParent(m_LevelSelectPanel.transform, false);
-            RectTransform scRt = sceneCard.AddComponent<RectTransform>();
-            scRt.anchorMin = new Vector2(0.5f, 0.5f);
-            scRt.anchorMax = new Vector2(0.5f, 0.5f);
-            scRt.pivot = new Vector2(0.5f, 0.5f);
-            scRt.anchoredPosition = Vector2.zero;
-            scRt.sizeDelta = new Vector2(768f, 1376f);
-
-            float fitScale = canvasHeight / 1376f;
-            if (768f * fitScale > canvasWidth)
-            {
-                fitScale = canvasWidth / 768f;
-            }
-            scRt.localScale = new Vector3(fitScale, fitScale, 1f);
-
-            // High-Definition Option 1 Master Artwork (Frame + Crown + Trail + Stardust + Plaque)
-            Image scImg = sceneCard.AddComponent<Image>();
-            Sprite mapSprite = SpriteFactory.LoadOrFallbackSprite("AdventureMap_Frame");
-            if (mapSprite == null) mapSprite = SpriteFactory.LoadOrFallbackSprite("AdventureMap_Option1");
-            if (mapSprite == null) mapSprite = SpriteFactory.LoadOrFallbackSprite("AdventureMap_Concept2");
-            if (mapSprite != null)
-            {
-                scImg.sprite = mapSprite;
-                scImg.color = Color.white;
-            }
-            else
-            {
-                scImg.color = new Color(0.04f, 0.07f, 0.16f, 1f);
-            }
-            scImg.raycastTarget = true;
-
-            // 3. Continuous Adventure Scroll View (Vertical Viewport nestled between top & bottom plaques)
-            GameObject scrollViewObj = new GameObject("AdventureScrollView");
-            scrollViewObj.transform.SetParent(sceneCard.transform, false);
-            RectTransform svRt = scrollViewObj.AddComponent<RectTransform>();
-            svRt.anchorMin = new Vector2(0.5f, 0.5f);
-            svRt.anchorMax = new Vector2(0.5f, 0.5f);
-            svRt.pivot = new Vector2(0.5f, 0.5f);
-            svRt.anchoredPosition = new Vector2(0f, -70f);
-            svRt.sizeDelta = new Vector2(590f, 800f);
-
-            RectMask2D mask = scrollViewObj.AddComponent<RectMask2D>();
-            mask.softness = new Vector2Int(0, 24);
-
-            ScrollRect scrollRect = scrollViewObj.AddComponent<ScrollRect>();
-            scrollRect.horizontal = false;
-            scrollRect.vertical = true;
-            scrollRect.movementType = ScrollRect.MovementType.Elastic;
-            scrollRect.elasticity = 0.10f;
-            scrollRect.inertia = true;
-            scrollRect.decelerationRate = 0.135f;
-            scrollRect.scrollSensitivity = 28f;
-            m_LevelScrollRect = scrollRect;
-
-            // 3b. Scroll Content: Continuous 40-level winding highway ribbon
-            const float totalContentH = 3850f;
-            GameObject contentObj = new GameObject("ScrollContent");
-            contentObj.transform.SetParent(scrollViewObj.transform, false);
-            RectTransform cRt = contentObj.AddComponent<RectTransform>();
-            cRt.anchorMin = new Vector2(0.5f, 0f);
-            cRt.anchorMax = new Vector2(0.5f, 0f);
-            cRt.pivot = new Vector2(0.5f, 0f);
-            cRt.anchoredPosition = Vector2.zero;
-            cRt.sizeDelta = new Vector2(590f, totalContentH);
-            scrollRect.content = cRt;
-
-            // 3c. Procedural 3D Golden Road Graphic
-            GameObject roadObj = new GameObject("GalaxyRoadRibbon");
-            roadObj.transform.SetParent(contentObj.transform, false);
-            RectTransform roadRt = roadObj.AddComponent<RectTransform>();
-            roadRt.anchorMin = new Vector2(0.5f, 0f);
-            roadRt.anchorMax = new Vector2(0.5f, 0f);
-            roadRt.pivot = new Vector2(0.5f, 0f);
-            roadRt.anchoredPosition = Vector2.zero;
-            roadRt.sizeDelta = new Vector2(590f, totalContentH);
-
-            m_GalaxyRoad = roadObj.AddComponent<GalaxyRoadGraphic>();
-            m_GalaxyRoad.Setup(40, 92f, 130f, 175f, Mathf.PI / 4.0f, Mathf.PI / 2.0f);
-
-            // 3d. Node Container for Level Buttons & Milestone Chests
-            GameObject nodeContainer = new GameObject("NodeContainer");
-            nodeContainer.transform.SetParent(contentObj.transform, false);
-            RectTransform ncRt = nodeContainer.AddComponent<RectTransform>();
-            ncRt.anchorMin = new Vector2(0.5f, 0f);
-            ncRt.anchorMax = new Vector2(0.5f, 0f);
-            ncRt.pivot = new Vector2(0.5f, 0f);
-            ncRt.anchoredPosition = Vector2.zero;
-            ncRt.sizeDelta = new Vector2(590f, totalContentH);
-            m_LevelGridContainer = nodeContainer.transform;
-
-            // 4. Interactive Ruby Red Close 'X' Button (Upper Right on frame at (305, 397))
-            GameObject closeBtnObj = new GameObject("RubyCloseButton");
-            closeBtnObj.transform.SetParent(sceneCard.transform, false);
-            RectTransform cbRt = closeBtnObj.AddComponent<RectTransform>();
-            cbRt.anchorMin = new Vector2(0.5f, 0.5f);
-            cbRt.anchorMax = new Vector2(0.5f, 0.5f);
-            cbRt.pivot = new Vector2(0.5f, 0.5f);
-            cbRt.anchoredPosition = new Vector2(305f, 397f);
-            cbRt.sizeDelta = new Vector2(92f, 92f);
-
-            Image cbImg = closeBtnObj.AddComponent<Image>();
-            cbImg.color = new Color(1f, 1f, 1f, 0.001f);
-            cbImg.raycastTarget = true;
-
-            Button cbBtn = closeBtnObj.AddComponent<Button>();
-            cbBtn.targetGraphic = cbImg;
-            cbBtn.onClick.AddListener(() =>
-            {
-                if (m_IsLevelSelectTransitioning) return;
-                m_IsLevelSelectTransitioning = true;
-                if (SoundManager.Instance != null) SoundManager.Instance.PlayButtonClick();
-                HapticManager.TriggerLight();
-                StartCoroutine(AnimateButtonPress(cbRt, () =>
-                {
-                    if (m_LevelSelectPanel != null) m_LevelSelectPanel.SetActive(false);
-                    OpenModeSelect();
-                    UpdateHUDVisibility();
-                    m_IsLevelSelectTransitioning = false;
-                }));
-            });
-
-            // 5. Dynamic Footer Text on the Bottom Gold Plaque (Centered at Y = -532f)
-            GameObject footerObj = new GameObject("AdventureFooterText");
-            footerObj.transform.SetParent(sceneCard.transform, false);
-            RectTransform ftRt = footerObj.AddComponent<RectTransform>();
-            ftRt.anchorMin = new Vector2(0.5f, 0.5f);
-            ftRt.anchorMax = new Vector2(0.5f, 0.5f);
-            ftRt.pivot = new Vector2(0.5f, 0.5f);
-            ftRt.anchoredPosition = new Vector2(0f, -518f);
-            ftRt.sizeDelta = new Vector2(520f, 40f);
-
-            Text ftText = footerObj.AddComponent<Text>();
-            ftText.font = (m_CandyFont != null) ? m_CandyFont : m_DefaultFont;
-            ftText.fontSize = 24;
-            ftText.alignment = TextAnchor.MiddleCenter;
-            ftText.color = new Color(1.0f, 0.94f, 0.70f, 1f);
-            MakeTextCrisp(ftText, new Color(0.28f, 0.12f, 0.02f, 0.95f), 1.2f);
-            m_AdventureFooterText = ftText;
-
-            // 6. Cyan Crystal Home Button (Safe Area Top-Left)
-            GameObject backBtn = new GameObject("BackButton");
-            backBtn.transform.SetParent(m_LevelSelectPanel.transform, false);
-            RectTransform bbRt = backBtn.AddComponent<RectTransform>();
-            bbRt.anchorMin = new Vector2(0f, 1f);
-            bbRt.anchorMax = new Vector2(0f, 1f);
-            bbRt.pivot = new Vector2(0f, 1f);
-            float homeLeft = Mathf.Max(safeLeft + 35f, 36f);
-            float homeTop = Mathf.Max(safeTop + 35f, 36f);
-            bbRt.anchoredPosition = new Vector2(homeLeft, -homeTop);
-            bbRt.sizeDelta = new Vector2(96f, 96f);
-
-            Image bbImg = backBtn.AddComponent<Image>();
-            bbImg.sprite = SpriteFactory.GetCyanCrystalHomeButtonSprite();
-            bbImg.color = Color.white;
-            bbImg.raycastTarget = true;
-
-            Button bbComp = backBtn.AddComponent<Button>();
-            bbComp.targetGraphic = bbImg;
-            bbComp.onClick.AddListener(() =>
-            {
-                if (m_IsLevelSelectTransitioning) return;
-                m_IsLevelSelectTransitioning = true;
-                if (SoundManager.Instance != null) SoundManager.Instance.PlayButtonClick();
-                HapticManager.TriggerLight();
-                StartCoroutine(AnimateButtonPress(bbRt, () =>
-                {
-                    if (m_LevelSelectPanel != null) m_LevelSelectPanel.SetActive(false);
-                    OpenModeSelect();
-                    UpdateHUDVisibility();
-                    m_IsLevelSelectTransitioning = false;
-                }));
-            });
-
-            // 7. Floating Side Chapter Buttons for multi-chapter navigation
-            float chBtnY = -532f;
-            // Prev Chapter Button (< CH 1)
-            GameObject prevSideObj = new GameObject("PrevChapterSideButton");
-            prevSideObj.transform.SetParent(sceneCard.transform, false);
-            m_PrevChapterSideRt = prevSideObj.AddComponent<RectTransform>();
-            m_PrevChapterSideRt.anchorMin = new Vector2(0.5f, 0.5f);
-            m_PrevChapterSideRt.anchorMax = new Vector2(0.5f, 0.5f);
-            m_PrevChapterSideRt.pivot = new Vector2(0.5f, 0.5f);
-            m_PrevChapterSideRt.anchoredPosition = new Vector2(-310f, chBtnY);
-            m_PrevChapterSideRt.sizeDelta = new Vector2(96f, 52f);
-
-            Image prevSideImg = prevSideObj.AddComponent<Image>();
-            prevSideImg.sprite = SpriteFactory.GetPillSprite(new Color(0.18f, 0.10f, 0.04f, 0.95f));
-            prevSideImg.raycastTarget = true;
-
-            Button prevSideBtn = prevSideObj.AddComponent<Button>();
-            prevSideBtn.targetGraphic = prevSideImg;
-            prevSideBtn.onClick.AddListener(() =>
-            {
-                if (m_IsLevelSelectTransitioning || m_LevelSelectPage <= 0) return;
-                if (SoundManager.Instance != null) SoundManager.Instance.PlayButtonClick();
-                HapticManager.TriggerLight();
-                m_LevelSelectPage--;
-                RefreshLevelSelectGrid(m_ActiveViewingMode);
-            });
-
-            GameObject prevTxtObj = CreateText(prevSideObj.transform, Vector2.zero, new Vector2(96f, 52f), "< CH 1", 18, FontStyle.Bold, new Color(1.0f, 0.90f, 0.40f, 1f), TextAnchor.MiddleCenter, m_CandyFont);
-            m_PrevChapterSideText = prevTxtObj.GetComponent<Text>();
-            MakeTextCrisp(m_PrevChapterSideText, new Color(0.12f, 0.06f, 0.02f, 0.95f), 1f);
-            prevSideObj.SetActive(false);
-
-            // Next Chapter Button (CH 2 >)
-            GameObject nextSideObj = new GameObject("NextChapterSideButton");
-            nextSideObj.transform.SetParent(sceneCard.transform, false);
-            m_NextChapterSideRt = nextSideObj.AddComponent<RectTransform>();
-            m_NextChapterSideRt.anchorMin = new Vector2(0.5f, 0.5f);
-            m_NextChapterSideRt.anchorMax = new Vector2(0.5f, 0.5f);
-            m_NextChapterSideRt.pivot = new Vector2(0.5f, 0.5f);
-            m_NextChapterSideRt.anchoredPosition = new Vector2(310f, chBtnY);
-            m_NextChapterSideRt.sizeDelta = new Vector2(96f, 52f);
-
-            Image nextSideImg = nextSideObj.AddComponent<Image>();
-            nextSideImg.sprite = SpriteFactory.GetPillSprite(new Color(0.18f, 0.10f, 0.04f, 0.95f));
-            nextSideImg.raycastTarget = true;
-
-            Button nextSideBtn = nextSideObj.AddComponent<Button>();
-            nextSideBtn.targetGraphic = nextSideImg;
-            nextSideBtn.onClick.AddListener(() =>
-            {
-                int maxPage = (LevelManager.GetMaxLevel(m_ActiveViewingMode) - 1) / 20;
-                if (m_IsLevelSelectTransitioning || m_LevelSelectPage >= maxPage) return;
-                if (SoundManager.Instance != null) SoundManager.Instance.PlayButtonClick();
-                HapticManager.TriggerLight();
-                m_LevelSelectPage++;
-                RefreshLevelSelectGrid(m_ActiveViewingMode);
-            });
-
-            GameObject nextTxtObj = CreateText(nextSideObj.transform, Vector2.zero, new Vector2(96f, 52f), "CH 2 >", 18, FontStyle.Bold, new Color(1.0f, 0.90f, 0.40f, 1f), TextAnchor.MiddleCenter, m_CandyFont);
-            m_NextChapterSideText = nextTxtObj.GetComponent<Text>();
-            MakeTextCrisp(m_NextChapterSideText, new Color(0.12f, 0.06f, 0.02f, 0.95f), 1f);
-            nextSideObj.SetActive(false);
-
-            m_LevelSelectPanel.SetActive(false);
+        private Vector2 GetLevelNodePosition(int lvl)
+        {
+            int step = Mathf.Clamp((lvl - 1) % 20, 0, 19);
+            return AdventurePathWaypoints[step];
         }
 
-                private void RefreshLevelSelectGrid(GameModeType mode)
+        private int GetCurrentPlayLevel(GameModeType mode)
         {
-            if (m_LevelGridContainer == null) return;
-            m_ActiveViewingMode = mode;
-            m_IsLevelSelectTransitioning = false;
-
             int maxLvl = Mathf.Max(40, LevelManager.GetMaxLevel(mode));
-            m_LevelSelectPage = 0;
-
-            if (m_PrevChapterSideRt != null) m_PrevChapterSideRt.gameObject.SetActive(false);
-            if (m_NextChapterSideRt != null) m_NextChapterSideRt.gameObject.SetActive(false);
-
-            int totalStars = GetTotalModeStars(mode);
-
-            // Clear previous child overlays
-            for (int i = m_LevelGridContainer.childCount - 1; i >= 0; i--)
-            {
-                Destroy(m_LevelGridContainer.GetChild(i).gameObject);
-            }
-
-            // Calculate current active play level: lowest unlocked level not yet completed (0 stars)
             int currentPlayLevel = 1;
             for (int l = 1; l <= maxLvl; l++)
             {
@@ -3081,45 +2821,273 @@ namespace BoxBlast
                     break;
                 }
             }
+            return currentPlayLevel;
+        }
 
-            // Update Dynamic Footer Text: "Current Level: 24       Total Stars: â˜… 68"
-            if (m_AdventureFooterText != null)
+        private void BuildLevelSelectScreen()
+        {
+            if (m_LevelSelectPanel != null)
             {
-                m_AdventureFooterText.text = $"Current Level: {currentPlayLevel}       Total Stars: \u2605 {totalStars}";
+                Destroy(m_LevelSelectPanel);
+                m_LevelSelectPanel = null;
             }
 
-            // Authentic 3D Sphere Sprites for the road
+            m_LevelSelectPanel = new GameObject("LevelSelectPanel");
+            m_LevelSelectPanel.transform.SetParent(m_RootCanvas, false);
+            RectTransform rt = m_LevelSelectPanel.AddComponent<RectTransform>();
+            rt.anchorMin = Vector2.zero; rt.anchorMax = Vector2.one; rt.sizeDelta = Vector2.zero;
+
+            // Fullscreen backdrop matching background deep cosmic space navy
+            Image mapBg = m_LevelSelectPanel.AddComponent<Image>();
+            mapBg.color = new Color(0.04f, 0.07f, 0.16f, 0.98f);
+            mapBg.raycastTarget = true;
+
+            // 1. Main Adventure Scene Card (768 x 1376 native aspect ratio matching Option 1 Master Artwork)
+            GameObject sceneCard = new GameObject("AdventureSceneCard");
+            sceneCard.transform.SetParent(m_LevelSelectPanel.transform, false);
+            RectTransform scRt = sceneCard.AddComponent<RectTransform>();
+            scRt.anchorMin = new Vector2(0.5f, 0.5f);
+            scRt.anchorMax = new Vector2(0.5f, 0.5f);
+            scRt.pivot = new Vector2(0.5f, 0.5f);
+            scRt.anchoredPosition = Vector2.zero;
+            scRt.sizeDelta = new Vector2(768f, 1376f);
+
+            float canvasHeight = 1920f;
+            float canvasWidth = 1080f;
+            if (m_RootCanvas != null)
+            {
+                RectTransform cRt = m_RootCanvas.GetComponent<RectTransform>();
+                if (cRt != null && cRt.rect.height > 0) canvasHeight = cRt.rect.height;
+                if (cRt != null && cRt.rect.width > 0) canvasWidth = cRt.rect.width;
+            }
+            float fitScale = canvasHeight / 1376f;
+            if (768f * fitScale > canvasWidth) fitScale = canvasWidth / 768f;
+            scRt.localScale = new Vector3(fitScale, fitScale, 1f);
+
+            // Master Artwork: Royal Crown, Ornate Baroque Golden Frame, "ADVENTURE TRAIL", Golden Ribbon, Stardust
+            Image scImg = sceneCard.AddComponent<Image>();
+            Sprite advSprite = Resources.Load<Sprite>("AdventureMap_Option1");
+            if (advSprite == null) advSprite = SpriteFactory.LoadOrFallbackSprite("AdventureMap_Option1");
+            if (advSprite == null) advSprite = SpriteFactory.LoadOrFallbackSprite("AdventureMap_Frame");
+            if (advSprite != null)
+            {
+                scImg.sprite = advSprite;
+                scImg.color = Color.white;
+            }
+            else
+            {
+                scImg.color = new Color(0.05f, 0.08f, 0.20f, 1f);
+            }
+            scImg.raycastTarget = true;
+
+            // 2. Interactive Ruby Red Close 'X' Button on top-right of the frame (Directly over painted button at 309, 388)
+            GameObject closeBtnObj = new GameObject("RubyCloseButton");
+            closeBtnObj.transform.SetParent(sceneCard.transform, false);
+            RectTransform cbRt = closeBtnObj.AddComponent<RectTransform>();
+            cbRt.anchorMin = new Vector2(0.5f, 0.5f);
+            cbRt.anchorMax = new Vector2(0.5f, 0.5f);
+            cbRt.pivot = new Vector2(0.5f, 0.5f);
+            cbRt.anchoredPosition = new Vector2(309f, 388f);
+            cbRt.sizeDelta = new Vector2(90f, 90f);
+
+            Image cbImg = closeBtnObj.AddComponent<Image>();
+            cbImg.color = Color.clear;
+            cbImg.raycastTarget = true;
+
+            Button cbBtn = closeBtnObj.AddComponent<Button>();
+            cbBtn.targetGraphic = cbImg;
+            cbBtn.transition = Selectable.Transition.None;
+            cbBtn.onClick.AddListener(() =>
+            {
+                if (m_IsLevelSelectTransitioning) return;
+                m_IsLevelSelectTransitioning = true;
+                if (SoundManager.Instance != null) SoundManager.Instance.PlayButtonClick();
+                HapticManager.TriggerLight();
+                StartCoroutine(AnimateButtonPress(cbRt, () =>
+                {
+                    if (m_LevelSelectPanel != null) m_LevelSelectPanel.SetActive(false);
+                    OpenModeSelect();
+                    UpdateHUDVisibility();
+                    m_IsLevelSelectTransitioning = false;
+                }));
+            });
+
+            // 3. Twinkling Diamond Star on Crown Peak
+            GameObject crownGlint = new GameObject("CrownStarGlint");
+            crownGlint.transform.SetParent(sceneCard.transform, false);
+            RectTransform cgRt = crownGlint.AddComponent<RectTransform>();
+            cgRt.anchorMin = new Vector2(0.5f, 0.5f);
+            cgRt.anchorMax = new Vector2(0.5f, 0.5f);
+            cgRt.pivot = new Vector2(0.5f, 0.5f);
+            cgRt.anchoredPosition = new Vector2(0f, 620f);
+            cgRt.sizeDelta = new Vector2(36f, 36f);
+            Image cgImg = crownGlint.AddComponent<Image>();
+            cgImg.sprite = GemIconFactory.GetStarSprite(true);
+            cgImg.color = new Color(1f, 1f, 1f, 0.95f);
+            cgImg.raycastTarget = false;
+            StartCoroutine(AnimateCrownSparkle(cgRt));
+
+            // 4. Node Container for Level Spheres & Milestone Rewards
+            GameObject nodeContainer = new GameObject("NodeContainer");
+            nodeContainer.transform.SetParent(sceneCard.transform, false);
+            RectTransform ncRt = nodeContainer.AddComponent<RectTransform>();
+            ncRt.anchorMin = new Vector2(0.5f, 0.5f);
+            ncRt.anchorMax = new Vector2(0.5f, 0.5f);
+            ncRt.pivot = new Vector2(0.5f, 0.5f);
+            ncRt.anchoredPosition = Vector2.zero;
+            ncRt.sizeDelta = new Vector2(768f, 1376f);
+            m_LevelGridContainer = nodeContainer.transform;
+
+            // 5. Bottom Baroque Plaque Text centered in brown velvet banner at Y = -517
+            GameObject ftTxtObj = CreateText(sceneCard.transform, new Vector2(0f, -517f), new Vector2(580f, 44f), "", 22, FontStyle.Bold, new Color(1.0f, 0.93f, 0.65f, 1f), TextAnchor.MiddleCenter, m_CandyFont);
+            m_AdventureFooterText = ftTxtObj.GetComponent<Text>();
+            MakeTextCrisp(m_AdventureFooterText, new Color(0.18f, 0.08f, 0.02f, 0.98f), 1.2f);
+
+            // 6. Chapter Navigation Buttons (< and >) on clean side margins
+            GameObject prevSideObj = new GameObject("PrevChapterButton");
+            prevSideObj.transform.SetParent(sceneCard.transform, false);
+            m_PrevChapterSideRt = prevSideObj.AddComponent<RectTransform>();
+            m_PrevChapterSideRt.anchorMin = new Vector2(0.5f, 0.5f);
+            m_PrevChapterSideRt.anchorMax = new Vector2(0.5f, 0.5f);
+            m_PrevChapterSideRt.pivot = new Vector2(0.5f, 0.5f);
+            m_PrevChapterSideRt.anchoredPosition = new Vector2(-320f, 0f);
+            m_PrevChapterSideRt.sizeDelta = new Vector2(54f, 68f);
+            Image prevImg = prevSideObj.AddComponent<Image>();
+            prevImg.sprite = SpriteFactory.GetRoundedButtonSprite(new Color(0.12f, 0.06f, 0.25f, 0.95f), new Color(1f, 0.85f, 0.3f, 0.95f), 0.2f);
+            Button prevBtn = prevSideObj.AddComponent<Button>();
+            prevBtn.onClick.AddListener(() =>
+            {
+                if (m_IsLevelSelectTransitioning) return;
+                if (m_LevelSelectPage > 0)
+                {
+                    m_IsLevelSelectTransitioning = true;
+                    if (SoundManager.Instance != null) SoundManager.Instance.PlayButtonClick();
+                    HapticManager.TriggerLight();
+                    m_LevelSelectPage--;
+                    RefreshLevelSelectGrid(m_ActiveViewingMode);
+                    m_IsLevelSelectTransitioning = false;
+                }
+            });
+            GameObject prevTxtObj = CreateText(prevSideObj.transform, Vector2.zero, new Vector2(54f, 60f), "\u25C0", 22, FontStyle.Bold, new Color(1f, 0.92f, 0.5f, 1f), TextAnchor.MiddleCenter, m_CandyFont);
+            m_PrevChapterSideText = prevTxtObj.GetComponent<Text>();
+            MakeTextCrisp(m_PrevChapterSideText, new Color(0.15f, 0.05f, 0.02f, 0.95f), 1f);
+
+            GameObject nextSideObj = new GameObject("NextChapterButton");
+            nextSideObj.transform.SetParent(sceneCard.transform, false);
+            m_NextChapterSideRt = nextSideObj.AddComponent<RectTransform>();
+            m_NextChapterSideRt.anchorMin = new Vector2(0.5f, 0.5f);
+            m_NextChapterSideRt.anchorMax = new Vector2(0.5f, 0.5f);
+            m_NextChapterSideRt.pivot = new Vector2(0.5f, 0.5f);
+            m_NextChapterSideRt.anchoredPosition = new Vector2(320f, 0f);
+            m_NextChapterSideRt.sizeDelta = new Vector2(54f, 68f);
+            Image nextImg = nextSideObj.AddComponent<Image>();
+            nextImg.sprite = SpriteFactory.GetRoundedButtonSprite(new Color(0.12f, 0.06f, 0.25f, 0.95f), new Color(1f, 0.85f, 0.3f, 0.95f), 0.2f);
+            Button nextBtn = nextSideObj.AddComponent<Button>();
+            nextBtn.onClick.AddListener(() =>
+            {
+                if (m_IsLevelSelectTransitioning) return;
+                int maxPage = (LevelManager.GetMaxLevel(m_ActiveViewingMode) - 1) / 20;
+                if (m_LevelSelectPage < maxPage)
+                {
+                    m_IsLevelSelectTransitioning = true;
+                    if (SoundManager.Instance != null) SoundManager.Instance.PlayButtonClick();
+                    HapticManager.TriggerLight();
+                    m_LevelSelectPage++;
+                    RefreshLevelSelectGrid(m_ActiveViewingMode);
+                    m_IsLevelSelectTransitioning = false;
+                }
+            });
+            GameObject nextTxtObj = CreateText(nextSideObj.transform, Vector2.zero, new Vector2(54f, 60f), "\u25B6", 22, FontStyle.Bold, new Color(1f, 0.92f, 0.5f, 1f), TextAnchor.MiddleCenter, m_CandyFont);
+            m_NextChapterSideText = nextTxtObj.GetComponent<Text>();
+            MakeTextCrisp(m_NextChapterSideText, new Color(0.15f, 0.05f, 0.02f, 0.95f), 1f);
+
+            m_LevelSelectPanel.SetActive(false);
+        }
+
+        private void RefreshLevelSelectGrid(GameModeType mode)
+        {
+            if (m_LevelGridContainer == null) return;
+            m_ActiveViewingMode = mode;
+            m_IsLevelSelectTransitioning = false;
+
+            int maxLvl = Mathf.Max(40, LevelManager.GetMaxLevel(mode));
+            int totalStars = GetTotalModeStars(mode);
+            int maxPage = (maxLvl - 1) / 20;
+            m_LevelSelectPage = Mathf.Clamp(m_LevelSelectPage, 0, maxPage);
+
+            // Update Chapter Navigation Buttons Visibility
+            if (m_PrevChapterSideRt != null)
+            {
+                m_PrevChapterSideRt.gameObject.SetActive(m_LevelSelectPage > 0);
+                if (m_PrevChapterSideText != null) m_PrevChapterSideText.text = $"< CH {m_LevelSelectPage}";
+            }
+            if (m_NextChapterSideRt != null)
+            {
+                m_NextChapterSideRt.gameObject.SetActive(m_LevelSelectPage < maxPage);
+                if (m_NextChapterSideText != null) m_NextChapterSideText.text = $"CH {m_LevelSelectPage + 2} >";
+            }
+
+            // Clear previous child overlays
+            for (int i = m_LevelGridContainer.childCount - 1; i >= 0; i--)
+            {
+                Destroy(m_LevelGridContainer.GetChild(i).gameObject);
+            }
+
+            int currentPlayLevel = GetCurrentPlayLevel(mode);
+
+            // Update Bottom Plaque Text (Formatted exactly like Image 2: "Current Level: 24   Total Stars: ★ 68")
+            if (m_AdventureFooterText != null)
+            {
+                m_AdventureFooterText.text = $"Current Level: {currentPlayLevel}      Total Stars: \u2605 {totalStars}";
+            }
+
+            // Vibrant 3D Sphere Sprites for the road matching Image 2
             string[] sphereSpriteNames = new string[]
             {
-                "Sphere_3D_Red",
-                "Sphere_3D_Pink",
-                "Sphere_3D_Purple",
-                "Sphere_3D_Blue",
-                "Sphere_3D_Cyan",
-                "Sphere_3D_Green",
-                "Sphere_3D_Yellow",
-                "Sphere_3D_Orange"
+                "Sphere_3D_Red",      // 1
+                "Sphere_3D_Red",      // 2
+                "Sphere_3D_Pink",     // 3
+                "Sphere_3D_Purple",   // 4
+                "Sphere_3D_Purple",   // 5
+                "Sphere_3D_Purple",   // 6
+                "Sphere_3D_Purple",   // 7
+                "Sphere_3D_Green",    // 8
+                "Sphere_3D_Cyan",     // 9
+                "Sphere_3D_Purple",   // 10
+                "Sphere_3D_Blue",     // 11
+                "Sphere_3D_Blue",     // 12
+                "Sphere_3D_Green",    // 13
+                "Sphere_3D_Purple",   // 14
+                "Sphere_3D_Red",      // 15
+                "Sphere_3D_Purple",   // 16
+                "Sphere_3D_Green",    // 17
+                "Sphere_3D_Yellow",   // 18
+                "Sphere_3D_Orange",   // 19
+                "Sphere_3D_Cyan"      // 20
             };
 
-            const float btnSize = 74f;
-            const float activeBtnSize = 82f;
+            const float btnSize = 64f;
+            const float activeBtnSize = 74f;
 
-            // Generate all 40 levels continuously along the 3D golden highway
-            for (int targetLvl = 1; targetLvl <= maxLvl; targetLvl++)
+            int pageStart = m_LevelSelectPage * 20 + 1;
+
+            // Generate 20 level nodes for current chapter
+            for (int step = 0; step < 20; step++)
             {
+                int targetLvl = pageStart + step;
+                if (targetLvl > maxLvl) break;
+
                 bool isUnlocked = LevelManager.IsLevelUnlocked(mode, targetLvl);
                 int stars = LevelManager.GetLevelStars(mode, targetLvl);
                 bool isCurrentActive = (targetLvl == currentPlayLevel);
 
-                Vector2 pos = (m_GalaxyRoad != null)
-                    ? m_GalaxyRoad.GetLevelPosition(targetLvl)
-                    : new Vector2(Mathf.Sin((targetLvl - 1) * 0.7853982f + 1.5707963f) * 175f, 130f + (targetLvl - 1) * 92f);
+                Vector2 pos = AdventurePathWaypoints[step];
 
                 GameObject btnObj = new GameObject($"LevelButton_{targetLvl}");
                 btnObj.transform.SetParent(m_LevelGridContainer, false);
                 RectTransform bRt = btnObj.AddComponent<RectTransform>();
-                bRt.anchorMin = new Vector2(0.5f, 0f);
-                bRt.anchorMax = new Vector2(0.5f, 0f);
+                bRt.anchorMin = new Vector2(0.5f, 0.5f);
+                bRt.anchorMax = new Vector2(0.5f, 0.5f);
                 bRt.pivot = new Vector2(0.5f, 0.5f);
                 bRt.anchoredPosition = pos;
                 float curSize = isCurrentActive ? activeBtnSize : btnSize;
@@ -3131,26 +3099,14 @@ namespace BoxBlast
                     GameObject auraObj = new GameObject("ActiveAura");
                     auraObj.transform.SetParent(btnObj.transform, false);
                     RectTransform aRt = auraObj.AddComponent<RectTransform>();
-                    aRt.sizeDelta = new Vector2(115f, 115f);
+                    aRt.sizeDelta = new Vector2(98f, 98f);
                     Image aImg = auraObj.AddComponent<Image>();
                     aImg.sprite = SpriteFactory.GetCircleSprite(new Color(1.0f, 0.88f, 0.25f, 0.50f));
                     aImg.raycastTarget = false;
                     StartCoroutine(PulseActiveHalo(aRt));
                 }
 
-                // Milestone Level Golden Ring for every 5th level (5, 10, 15, 20...)
-                if (targetLvl % 5 == 0)
-                {
-                    GameObject msObj = new GameObject("MilestoneAura");
-                    msObj.transform.SetParent(btnObj.transform, false);
-                    RectTransform msRt = msObj.AddComponent<RectTransform>();
-                    msRt.sizeDelta = new Vector2(curSize * 1.25f, curSize * 1.25f);
-                    Image msImg = msObj.AddComponent<Image>();
-                    msImg.sprite = SpriteFactory.GetCircleSprite(new Color(1.0f, 0.82f, 0.2f, 0.35f));
-                    msImg.raycastTarget = false;
-                }
-
-                // Base Sphere Image: Render vibrant 3D sphere for every level
+                // 2. Base Sphere Image: Render vibrant 3D sphere or locked golden disc
                 GameObject sphereObj = new GameObject("SphereImg");
                 sphereObj.transform.SetParent(btnObj.transform, false);
                 RectTransform sRt = sphereObj.AddComponent<RectTransform>();
@@ -3158,86 +3114,79 @@ namespace BoxBlast
                 Image sImg = sphereObj.AddComponent<Image>();
                 sImg.raycastTarget = false;
 
-                string spName = sphereSpriteNames[(targetLvl - 1) % sphereSpriteNames.Length];
-                Sprite sphereSprite = SpriteFactory.LoadOrFallbackSprite(spName);
-                if (sphereSprite != null)
+                if (isUnlocked)
                 {
-                    sImg.sprite = sphereSprite;
-                    sImg.color = isUnlocked ? Color.white : new Color(0.70f, 0.72f, 0.82f, 0.95f);
+                    string spName = sphereSpriteNames[step % sphereSpriteNames.Length];
+                    Sprite sphereSprite = SpriteFactory.LoadOrFallbackSprite(spName);
+                    if (sphereSprite != null)
+                    {
+                        sImg.sprite = sphereSprite;
+                        sImg.color = Color.white;
+                    }
+                    else
+                    {
+                        sImg.sprite = SpriteFactory.GetCircleSprite(new Color(0.2f, 0.7f, 1f));
+                    }
+
+                    // Level Number Text in Center of Sphere
+                    GameObject numObj = CreateText(btnObj.transform, Vector2.zero, new Vector2(60f, 40f), targetLvl.ToString(), isCurrentActive ? 28 : 24, FontStyle.Bold, Color.white, TextAnchor.MiddleCenter, m_CandyFont);
+                    Text numTxt = numObj.GetComponent<Text>();
+                    MakeTextCrisp(numTxt, new Color(0.02f, 0.04f, 0.14f, 0.95f), 1.2f);
+
+                    // Stars Display Underneath (Matching Image 2: 3 golden stars curved beneath the sphere)
+                    GameObject starsTray = new GameObject("StarsTray");
+                    starsTray.transform.SetParent(btnObj.transform, false);
+                    RectTransform stRt = starsTray.AddComponent<RectTransform>();
+                    stRt.anchoredPosition = new Vector2(0f, -28f);
+                    stRt.sizeDelta = new Vector2(56f, 18f);
+
+                    // Star 1 (Left)
+                    GameObject s1 = new GameObject("Star_1");
+                    s1.transform.SetParent(starsTray.transform, false);
+                    RectTransform s1Rt = s1.AddComponent<RectTransform>();
+                    s1Rt.anchoredPosition = new Vector2(-15f, 0f);
+                    s1Rt.sizeDelta = new Vector2(14f, 14f);
+                    s1Rt.localEulerAngles = new Vector3(0f, 0f, 8f);
+                    Image s1Img = s1.AddComponent<Image>();
+                    s1Img.sprite = GemIconFactory.GetStarSprite(stars >= 1);
+                    s1Img.raycastTarget = false;
+
+                    // Star 2 (Center Hero Crown: elevated at Y = 2)
+                    GameObject s2 = new GameObject("Star_2");
+                    s2.transform.SetParent(starsTray.transform, false);
+                    RectTransform s2Rt = s2.AddComponent<RectTransform>();
+                    s2Rt.anchoredPosition = new Vector2(0f, 2f);
+                    s2Rt.sizeDelta = new Vector2(18f, 18f);
+                    Image s2Img = s2.AddComponent<Image>();
+                    s2Img.sprite = GemIconFactory.GetStarSprite(stars >= 2);
+                    s2Img.raycastTarget = false;
+
+                    // Star 3 (Right)
+                    GameObject s3 = new GameObject("Star_3");
+                    s3.transform.SetParent(starsTray.transform, false);
+                    RectTransform s3Rt = s3.AddComponent<RectTransform>();
+                    s3Rt.anchoredPosition = new Vector2(15f, 0f);
+                    s3Rt.sizeDelta = new Vector2(14f, 14f);
+                    s3Rt.localEulerAngles = new Vector3(0f, 0f, -8f);
+                    Image s3Img = s3.AddComponent<Image>();
+                    s3Img.sprite = GemIconFactory.GetStarSprite(stars >= 3);
+                    s3Img.raycastTarget = false;
                 }
                 else
                 {
-                    sImg.sprite = SpriteFactory.GetCircleSprite(new Color(0.2f, 0.7f, 1f));
-                }
-
-                // Level Number Text in Center of Sphere
-                GameObject numObj = CreateText(btnObj.transform, Vector2.zero, new Vector2(70f, 44f), targetLvl.ToString(), isCurrentActive ? 32 : 26, FontStyle.Bold, Color.white, TextAnchor.MiddleCenter, m_CandyFont);
-                Text numTxt = numObj.GetComponent<Text>();
-                MakeTextCrisp(numTxt, new Color(0.02f, 0.04f, 0.14f, 0.95f), 1.2f);
-
-                // Stars Display Tray
-                GameObject starsTray = new GameObject("StarsTray");
-                starsTray.transform.SetParent(btnObj.transform, false);
-                RectTransform stRt = starsTray.AddComponent<RectTransform>();
-                stRt.anchoredPosition = new Vector2(0f, -38f);
-                stRt.sizeDelta = new Vector2(82f, 26f);
-
-                Image stBg = starsTray.AddComponent<Image>();
-                stBg.sprite = SpriteFactory.GetRoundedButtonSprite(new Color(0.05f, 0.10f, 0.26f, 0.90f), new Color(0.98f, 0.82f, 0.25f, 0.85f), 0.12f);
-                stBg.raycastTarget = false;
-
-                // Star 1 (Left: 20x20)
-                GameObject s1 = new GameObject("Star_1");
-                s1.transform.SetParent(starsTray.transform, false);
-                RectTransform s1Rt = s1.AddComponent<RectTransform>();
-                s1Rt.anchoredPosition = new Vector2(-20f, 1f);
-                s1Rt.sizeDelta = new Vector2(20f, 20f);
-                s1Rt.localEulerAngles = new Vector3(0f, 0f, 8f);
-                Image s1Img = s1.AddComponent<Image>();
-                s1Img.sprite = GemIconFactory.GetStarSprite(stars >= 1);
-                s1Img.raycastTarget = false;
-
-                // Star 2 (Center Hero Crown: 26x26)
-                GameObject s2 = new GameObject("Star_2");
-                s2.transform.SetParent(starsTray.transform, false);
-                RectTransform s2Rt = s2.AddComponent<RectTransform>();
-                s2Rt.anchoredPosition = new Vector2(0f, 3f);
-                s2Rt.sizeDelta = new Vector2(26f, 26f);
-                Image s2Img = s2.AddComponent<Image>();
-                s2Img.sprite = GemIconFactory.GetStarSprite(stars >= 2);
-                s2Img.raycastTarget = false;
-
-                // Star 3 (Right: 20x20)
-                GameObject s3 = new GameObject("Star_3");
-                s3.transform.SetParent(starsTray.transform, false);
-                RectTransform s3Rt = s3.AddComponent<RectTransform>();
-                s3Rt.anchoredPosition = new Vector2(20f, 1f);
-                s3Rt.sizeDelta = new Vector2(20f, 20f);
-                s3Rt.localEulerAngles = new Vector3(0f, 0f, -8f);
-                Image s3Img = s3.AddComponent<Image>();
-                s3Img.sprite = GemIconFactory.GetStarSprite(stars >= 3);
-                s3Img.raycastTarget = false;
-
-                // If Locked: Add dark tint shield + golden lock badge
-                if (!isUnlocked)
-                {
-                    GameObject lockOverlay = new GameObject("LockOverlay");
-                    lockOverlay.transform.SetParent(btnObj.transform, false);
-                    RectTransform loRt = lockOverlay.AddComponent<RectTransform>();
-                    loRt.sizeDelta = new Vector2(curSize, curSize);
-                    Image loImg = lockOverlay.AddComponent<Image>();
-                    loImg.sprite = SpriteFactory.GetCircleSprite(new Color(0.04f, 0.06f, 0.16f, 0.60f));
-                    loImg.raycastTarget = false;
+                    // Locked State (Matching Image 2: Gold-rimmed metallic disc with golden padlock)
+                    sImg.sprite = SpriteFactory.GetRoundedButtonSprite(new Color(0.25f, 0.28f, 0.35f, 0.95f), new Color(0.95f, 0.78f, 0.28f, 0.95f), 0.5f);
+                    sImg.color = Color.white;
 
                     GameObject lockBadge = new GameObject("LockBadge");
                     lockBadge.transform.SetParent(btnObj.transform, false);
                     RectTransform lbRt = lockBadge.AddComponent<RectTransform>();
-                    lbRt.anchoredPosition = new Vector2(20f, 20f);
+                    lbRt.anchoredPosition = Vector2.zero;
                     lbRt.sizeDelta = new Vector2(24f, 28f);
                     Image lbImg = lockBadge.AddComponent<Image>();
                     lbImg.sprite = SpriteFactory.LoadOrFallbackSprite("Wardrobe_Icon_Lock");
                     if (lbImg.sprite == null) lbImg.sprite = GemIconFactory.GetStarSprite(true);
-                    lbImg.color = new Color(1f, 0.90f, 0.35f, 0.98f);
+                    lbImg.color = new Color(1f, 0.88f, 0.35f, 0.98f);
                     lbImg.raycastTarget = false;
                 }
 
@@ -3247,28 +3196,21 @@ namespace BoxBlast
                     GameObject playBadgeObj = new GameObject("PlayBadge");
                     playBadgeObj.transform.SetParent(btnObj.transform, false);
                     RectTransform pbRt = playBadgeObj.AddComponent<RectTransform>();
-                    pbRt.anchoredPosition = new Vector2(0f, 48f);
-                    pbRt.sizeDelta = new Vector2(86f, 32f);
+                    pbRt.anchoredPosition = new Vector2(0f, 38f);
+                    pbRt.sizeDelta = new Vector2(68f, 24f);
 
                     Image pbImg = playBadgeObj.AddComponent<Image>();
                     Sprite pbs = SpriteFactory.LoadOrFallbackSprite("PlayBadge3D");
-                    if (pbs != null)
-                    {
-                        pbImg.sprite = pbs;
-                        pbImg.color = Color.white;
-                    }
-                    else
-                    {
-                        pbImg.sprite = SpriteFactory.GetPillSprite(new Color(1.0f, 0.75f, 0.12f, 1f));
-                    }
+                    if (pbs != null) pbImg.sprite = pbs;
+                    else pbImg.sprite = SpriteFactory.GetPillSprite(new Color(1.0f, 0.75f, 0.12f, 1f));
                     pbImg.raycastTarget = false;
 
-                    GameObject playTxtObj = CreateText(playBadgeObj.transform, Vector2.zero, new Vector2(86f, 30f), "PLAY", 18, FontStyle.Bold, Color.white, TextAnchor.MiddleCenter, m_CandyFont);
+                    GameObject playTxtObj = CreateText(playBadgeObj.transform, Vector2.zero, new Vector2(68f, 22f), "PLAY", 14, FontStyle.Bold, Color.white, TextAnchor.MiddleCenter, m_CandyFont);
                     Text playTxt = playTxtObj.GetComponent<Text>();
                     MakeTextCrisp(playTxt, new Color(0.55f, 0.25f, 0.02f, 0.95f), 1.0f);
                 }
 
-                // 4. Interactive Touch Target covering button
+                // Interactive Touch Target covering button
                 Image bImg = btnObj.AddComponent<Image>();
                 bImg.color = new Color(1f, 1f, 1f, 0.001f);
                 bImg.raycastTarget = true;
@@ -3277,11 +3219,12 @@ namespace BoxBlast
                 btn.targetGraphic = bImg;
                 btn.transition = Selectable.Transition.None;
 
+                int capturedLvl = targetLvl;
                 btn.onClick.AddListener(() =>
                 {
                     if (m_IsLevelSelectTransitioning) return;
 
-                    if (LevelManager.IsLevelUnlocked(mode, targetLvl))
+                    if (LevelManager.IsLevelUnlocked(mode, capturedLvl))
                     {
                         m_IsLevelSelectTransitioning = true;
                         if (SoundManager.Instance != null) SoundManager.Instance.PlayButtonClick();
@@ -3300,7 +3243,7 @@ namespace BoxBlast
                         {
                             if (LevelManager.Instance != null)
                             {
-                                LevelManager.Instance.StartLevel(mode, targetLvl);
+                                LevelManager.Instance.StartLevel(mode, capturedLvl);
                             }
                             if (m_LevelSelectPanel != null) m_LevelSelectPanel.SetActive(false);
                             UpdateHUDVisibility();
@@ -3311,29 +3254,29 @@ namespace BoxBlast
                     {
                         if (SoundManager.Instance != null) SoundManager.Instance.PlayButtonClick();
                         HapticManager.TriggerLight();
-                        ShowToast($"Level {targetLvl} is locked! Complete Level {targetLvl - 1} first!");
+                        ShowToast($"Level {capturedLvl} is locked! Complete Level {capturedLvl - 1} first!");
                     }
                 });
             }
 
-            // Milestone Chests positioned at Option 1's authentic 3D treasure chest locations
-            // Milestone Chests positioned along the continuous trail in scenic outer coves
-            (Vector2 pos, int targetLevel, BallSkinType skinType, string skinName)[] milestoneChests =
-                new (Vector2, int, BallSkinType, string)[]
-            {
-                (new Vector2( 140f,  498f),  5, BallSkinType.LimeMint,      "Emerald Mint Ball Skin!"),
-                (new Vector2(-140f,  958f), 10, BallSkinType.OrangePlanet,  "Orange Planet Ball Skin!"),
-                (new Vector2( 140f, 1380f), 15, BallSkinType.StarCore,      "Golden Star Core Ball Skin!"),
-                (new Vector2( 140f, 1878f), 20, BallSkinType.RainbowBlast,  "Rainbow Blast Ball Skin!"),
-                (new Vector2(-140f, 2338f), 25, BallSkinType.LightningVolt, "Lightning Volt Ball Skin!"),
-                (new Vector2( 140f, 2798f), 30, BallSkinType.SunBurst,      "Solar Flare Ball Skin!"),
-                (new Vector2( 140f, 3220f), 35, BallSkinType.GalaxySwirl,   "Galaxy Nebula Ball Skin!"),
-                (new Vector2(-140f, 3718f), 40, BallSkinType.CyanWave,      "Royal Cyan Wave Ball Skin!")
-            };
+            // Milestone Chests positioned on the golden trail matching Image 2:
+            // Chest 1: Plateau at bend (Lvl 10 in Ch 1, Lvl 30 in Ch 2) at (155f, -65f)
+            // Chest 2: Grand Summit Vault (Lvl 20 in Ch 1, Lvl 40 in Ch 2) at (-20f, 275f)
+            (Vector2 pos, int targetLevel, BallSkinType skinType, string skinName)[] chapterChests = (m_LevelSelectPage == 0)
+                ? new (Vector2, int, BallSkinType, string)[]
+                {
+                    (new Vector2( 155f,  -65f), 10, BallSkinType.OrangePlanet, "Orange Planet Ball Skin!"),
+                    (new Vector2( -20f,  275f), 20, BallSkinType.RainbowBlast, "Rainbow Blast Ball Skin!")
+                }
+                : new (Vector2, int, BallSkinType, string)[]
+                {
+                    (new Vector2( 155f,  -65f), 30, BallSkinType.SunBurst,     "Rainbow Flame Ball Skin!"),
+                    (new Vector2( -20f,  275f), 40, BallSkinType.CyanWave,     "Royal Cyan Wave Ball Skin!")
+                };
 
-            for (int ci = 0; ci < milestoneChests.Length; ci++)
+            for (int ci = 0; ci < chapterChests.Length; ci++)
             {
-                var chestInfo = milestoneChests[ci];
+                var chestInfo = chapterChests[ci];
                 int targetLvl = chestInfo.targetLevel;
                 BallSkinType skin = chestInfo.skinType;
                 string rewardText = chestInfo.skinName;
@@ -3344,11 +3287,11 @@ namespace BoxBlast
                 GameObject chestObj = new GameObject($"MilestoneChest_{targetLvl}");
                 chestObj.transform.SetParent(m_LevelGridContainer, false);
                 RectTransform cRt = chestObj.AddComponent<RectTransform>();
-                cRt.anchorMin = new Vector2(0.5f, 0f);
-                cRt.anchorMax = new Vector2(0.5f, 0f);
+                cRt.anchorMin = new Vector2(0.5f, 0.5f);
+                cRt.anchorMax = new Vector2(0.5f, 0.5f);
                 cRt.pivot = new Vector2(0.5f, 0.5f);
                 cRt.anchoredPosition = chestInfo.pos;
-                cRt.sizeDelta = new Vector2(100f, 100f);
+                cRt.sizeDelta = new Vector2(88f, 88f);
 
                 // Invisible touch/raycast target covering the full chest region
                 Image cTouchImg = chestObj.AddComponent<Image>();
@@ -3361,9 +3304,9 @@ namespace BoxBlast
                     GameObject auraObj = new GameObject("ChestAura");
                     auraObj.transform.SetParent(chestObj.transform, false);
                     RectTransform aRt = auraObj.AddComponent<RectTransform>();
-                    aRt.sizeDelta = new Vector2(120f, 120f);
+                    aRt.sizeDelta = new Vector2(104f, 104f);
                     Image aImg = auraObj.AddComponent<Image>();
-                    aImg.sprite = SpriteFactory.GetCircleSprite(new Color(1f, 0.86f, 0.22f, 0.55f));
+                    aImg.sprite = SpriteFactory.GetCircleSprite(new Color(1f, 0.86f, 0.22f, 0.65f));
                     aImg.raycastTarget = false;
                     StartCoroutine(PulseActiveHalo(aRt));
                 }
@@ -3372,7 +3315,7 @@ namespace BoxBlast
                 GameObject imgObj = new GameObject("ChestVisual");
                 imgObj.transform.SetParent(chestObj.transform, false);
                 RectTransform imgRt = imgObj.AddComponent<RectTransform>();
-                imgRt.sizeDelta = new Vector2(96f, 96f);
+                imgRt.sizeDelta = new Vector2(80f, 80f);
                 Image cImg = imgObj.AddComponent<Image>();
                 cImg.raycastTarget = false;
 
@@ -3386,8 +3329,8 @@ namespace BoxBlast
                         GameObject ballInChest = new GameObject("BallInsideChest");
                         ballInChest.transform.SetParent(chestObj.transform, false);
                         RectTransform bicRt = ballInChest.AddComponent<RectTransform>();
-                        bicRt.anchoredPosition = new Vector2(0f, 8f);
-                        bicRt.sizeDelta = new Vector2(40f, 40f);
+                        bicRt.anchoredPosition = new Vector2(0f, 6f);
+                        bicRt.sizeDelta = new Vector2(30f, 30f);
 
                         Image bicImg = ballInChest.AddComponent<Image>();
                         bicImg.sprite = SpriteFactory.GetWardrobeSkinSprite(skin);
@@ -3395,9 +3338,9 @@ namespace BoxBlast
 
                         GameObject badge = new GameObject("SkinBadge");
                         badge.transform.SetParent(chestObj.transform, false);
-                        RectTransform bRt = badge.AddComponent<RectTransform>();
-                        bRt.anchoredPosition = new Vector2(28f, 28f);
-                        bRt.sizeDelta = new Vector2(28f, 28f);
+                        RectTransform badgeRt = badge.AddComponent<RectTransform>();
+                        badgeRt.anchoredPosition = new Vector2(22f, 22f);
+                        badgeRt.sizeDelta = new Vector2(22f, 22f);
                         Image bImg = badge.AddComponent<Image>();
                         bImg.sprite = SpriteFactory.GetGreenCheckmarkBadgeSprite();
                         bImg.raycastTarget = false;
@@ -3414,27 +3357,27 @@ namespace BoxBlast
                 GameObject tagObj = new GameObject("LevelTag");
                 tagObj.transform.SetParent(chestObj.transform, false);
                 RectTransform tagRt = tagObj.AddComponent<RectTransform>();
-                tagRt.anchoredPosition = new Vector2(0f, -38f);
-                tagRt.sizeDelta = new Vector2(74f, 20f);
+                tagRt.anchoredPosition = new Vector2(0f, -32f);
+                tagRt.sizeDelta = new Vector2(68f, 20f);
                 Image tagBg = tagObj.AddComponent<Image>();
                 tagBg.raycastTarget = false;
 
                 if (isClaimed)
                 {
                     tagBg.sprite = SpriteFactory.GetPillSprite(new Color(0.04f, 0.22f, 0.12f, 0.95f));
-                    GameObject tagTxtObj = CreateText(tagObj.transform, Vector2.zero, new Vector2(74f, 20f), $"LVL {targetLvl} \u2713", 12, FontStyle.Bold, new Color(0.45f, 1f, 0.55f, 1f), TextAnchor.MiddleCenter, m_CandyFont);
+                    GameObject tagTxtObj = CreateText(tagObj.transform, Vector2.zero, new Vector2(68f, 20f), $"LVL {targetLvl} \u2713", 12, FontStyle.Bold, new Color(0.45f, 1f, 0.55f, 1f), TextAnchor.MiddleCenter, m_CandyFont);
                     Text tagTxt = tagTxtObj.GetComponent<Text>();
                     MakeTextCrisp(tagTxt, new Color(0.01f, 0.08f, 0.04f, 0.95f), 1f);
                 }
                 else
                 {
                     tagBg.sprite = SpriteFactory.GetPillSprite(isConditionMet ? new Color(0.65f, 0.45f, 0.02f, 0.95f) : new Color(0.04f, 0.08f, 0.22f, 0.92f));
-                    GameObject tagTxtObj = CreateText(tagObj.transform, Vector2.zero, new Vector2(74f, 20f), isConditionMet ? $"LVL {targetLvl}!" : $"LVL {targetLvl}", 12, FontStyle.Bold, isConditionMet ? new Color(1f, 0.96f, 0.4f, 1f) : new Color(1f, 0.88f, 0.35f, 1f), TextAnchor.MiddleCenter, m_CandyFont);
+                    GameObject tagTxtObj = CreateText(tagObj.transform, Vector2.zero, new Vector2(68f, 20f), isConditionMet ? $"LVL {targetLvl}!" : $"LVL {targetLvl}", 12, FontStyle.Bold, isConditionMet ? new Color(1f, 0.96f, 0.4f, 1f) : new Color(1f, 0.88f, 0.35f, 1f), TextAnchor.MiddleCenter, m_CandyFont);
                     Text tagTxt = tagTxtObj.GetComponent<Text>();
                     MakeTextCrisp(tagTxt, new Color(0.02f, 0.04f, 0.12f, 0.95f), 1f);
                 }
 
-                // 4. Interactive Touch Button
+                // Click to claim or preview
                 Button cBtn = chestObj.AddComponent<Button>();
                 cBtn.targetGraphic = cTouchImg;
                 cBtn.transition = Selectable.Transition.None;
@@ -3456,6 +3399,145 @@ namespace BoxBlast
 
                 chestObj.transform.SetAsLastSibling();
             }
+        }
+
+        private System.Collections.IEnumerator DelayedTriggerAdvance(int completedLvl, int nextLvl)
+        {
+            yield return null; // Wait 1 frame for Canvas layout update
+            TriggerLevelAdvanceAnimation(completedLvl, nextLvl);
+        }
+
+        public void TriggerLevelAdvanceAnimation(int completedLvl, int nextLvl)
+        {
+            if (m_AdvanceAnimationCoroutine != null)
+            {
+                StopCoroutine(m_AdvanceAnimationCoroutine);
+            }
+            m_AdvanceAnimationCoroutine = StartCoroutine(AnimateLevelAdvanceRoutine(completedLvl, nextLvl));
+        }
+
+        private System.Collections.IEnumerator AnimateLevelAdvanceRoutine(int completedLvl, int nextLvl)
+        {
+            if (m_LevelGridContainer == null) yield break;
+
+            Vector2 startPos = GetLevelNodePosition(completedLvl);
+            Vector2 endPos = GetLevelNodePosition(nextLvl);
+
+            Transform nextBtnTransform = m_LevelGridContainer.Find($"LevelButton_{nextLvl}");
+            Transform completedBtnTransform = m_LevelGridContainer.Find($"LevelButton_{completedLvl}");
+
+            // Hide the static PlayBadge on nextLvl while moving
+            Transform staticPlayBadge = (nextBtnTransform != null) ? nextBtnTransform.Find("PlayBadge") : null;
+            if (staticPlayBadge != null) staticPlayBadge.gameObject.SetActive(false);
+
+            // Create temporary flying/gliding PlayBadge marker
+            GameObject movingBadge = new GameObject("MovingPlayBadge");
+            movingBadge.transform.SetParent(m_LevelGridContainer, false);
+            RectTransform mbRt = movingBadge.AddComponent<RectTransform>();
+            mbRt.anchorMin = new Vector2(0.5f, 0.5f);
+            mbRt.anchorMax = new Vector2(0.5f, 0.5f);
+            mbRt.pivot = new Vector2(0.5f, 0.5f);
+            mbRt.anchoredPosition = startPos + new Vector2(0f, 38f);
+            mbRt.sizeDelta = new Vector2(74f, 26f);
+
+            Image mbImg = movingBadge.AddComponent<Image>();
+            Sprite pbs = SpriteFactory.LoadOrFallbackSprite("PlayBadge3D");
+            if (pbs != null) mbImg.sprite = pbs;
+            else mbImg.sprite = SpriteFactory.GetPillSprite(new Color(1.0f, 0.78f, 0.15f, 1f));
+            mbImg.raycastTarget = false;
+
+            GameObject mbTxtObj = CreateText(movingBadge.transform, Vector2.zero, new Vector2(72f, 24f), "PLAY", 14, FontStyle.Bold, Color.white, TextAnchor.MiddleCenter, m_CandyFont);
+            MakeTextCrisp(mbTxtObj.GetComponent<Text>(), new Color(0.55f, 0.25f, 0.02f, 0.95f), 1.0f);
+
+            // Glowing trail aura behind the gliding badge
+            GameObject trailAura = new GameObject("BadgeTrailAura");
+            trailAura.transform.SetParent(movingBadge.transform, false);
+            RectTransform taRt = trailAura.AddComponent<RectTransform>();
+            taRt.sizeDelta = new Vector2(92f, 40f);
+            Image taImg = trailAura.AddComponent<Image>();
+            taImg.sprite = SpriteFactory.GetCircleSprite(new Color(1f, 0.90f, 0.3f, 0.50f));
+            taImg.raycastTarget = false;
+            trailAura.transform.SetAsFirstSibling();
+
+            // Brief pause to admire the win
+            yield return new WaitForSeconds(0.35f);
+
+            // Smoothly hop/glide across the road to the new level over 0.75 seconds
+            float duration = 0.75f;
+            float elapsed = 0f;
+
+            if (SoundManager.Instance != null) SoundManager.Instance.PlayButtonClick();
+            HapticManager.TriggerLight();
+
+            while (elapsed < duration)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                float t = Mathf.Clamp01(elapsed / duration);
+                float smoothT = Mathf.SmoothStep(0f, 1f, t);
+
+                // Arc/hop path
+                Vector2 curBadgePos = Vector2.Lerp(startPos, endPos, smoothT);
+                float hopY = Mathf.Sin(smoothT * Mathf.PI) * 24f;
+                mbRt.anchoredPosition = curBadgePos + new Vector2(0f, 38f + hopY);
+
+                float badgeScale = 1.0f + Mathf.Sin(smoothT * Mathf.PI) * 0.25f;
+                mbRt.localScale = new Vector3(badgeScale, badgeScale, 1f);
+
+                yield return null;
+            }
+
+            mbRt.anchoredPosition = endPos + new Vector2(0f, 38f);
+            mbRt.localScale = Vector3.one;
+
+            // Arrival Celebration on Next Level!
+            if (SoundManager.Instance != null) SoundManager.Instance.PlayCombo();
+            HapticManager.TriggerHeavy();
+
+            // Ripple pulse ring
+            if (nextBtnTransform != null)
+            {
+                GameObject unlockPulse = new GameObject("UnlockPulseRing");
+                unlockPulse.transform.SetParent(nextBtnTransform, false);
+                RectTransform upRt = unlockPulse.AddComponent<RectTransform>();
+                upRt.sizeDelta = new Vector2(66f, 66f);
+                Image upImg = unlockPulse.AddComponent<Image>();
+                upImg.sprite = SpriteFactory.GetCircleSprite(new Color(1f, 0.92f, 0.35f, 0.75f));
+                upImg.raycastTarget = false;
+                StartCoroutine(AnimateUnlockPulse(upRt, upImg));
+            }
+
+            yield return new WaitForSeconds(0.2f);
+
+            if (staticPlayBadge != null) staticPlayBadge.gameObject.SetActive(true);
+            if (movingBadge != null) Destroy(movingBadge);
+
+            m_AdvanceAnimationCoroutine = null;
+        }
+
+        private System.Collections.IEnumerator AnimateUnlockPulse(RectTransform ringRt, Image ringImg)
+        {
+            float dur = 0.60f;
+            float el = 0f;
+            while (el < dur)
+            {
+                el += Time.unscaledDeltaTime;
+                float t = Mathf.Clamp01(el / dur);
+                float s = Mathf.Lerp(1.0f, 2.2f, t);
+                if (ringRt != null) ringRt.localScale = new Vector3(s, s, 1f);
+                if (ringImg != null)
+                {
+                    Color c = ringImg.color;
+                    c.a = Mathf.Lerp(0.80f, 0f, t);
+                    ringImg.color = c;
+                }
+                yield return null;
+            }
+            if (ringRt != null) Destroy(ringRt.gameObject);
+        }
+
+        public void CenterScrollOnLevel(int level)
+        {
+            // Fully visible within the fixed 768x1376 modal card
         }
 
         private System.Collections.IEnumerator PulseActiveHalo(RectTransform haloRt)
@@ -4537,6 +4619,7 @@ namespace BoxBlast
             m_VictoryNextBtnObj = CreateVictoryButton(sceneObj.transform, new Vector2(-126f, -248f), new Vector2(216f, 114f), () =>
             {
                 m_VictoryModal.SetActive(false);
+                m_JustCompletedLevel = 0;
                 if (LevelManager.Instance != null)
                 {
                     LevelManager.Instance.NextLevel();

@@ -156,7 +156,15 @@ namespace BoxBlast
             EmbeddedGem = gem;
             SetPreview(false);
 
-            m_BlockRenderer.sprite = SpriteFactory.GetBlockSprite(color);
+            if (gem != GemType.None)
+            {
+                // Gem blocks keep the active skin's base color/gradient, but strip the center emblem (e.g. Electric bolt)
+                m_BlockRenderer.sprite = SpriteFactory.GetGemCarrierBlockSprite(color);
+            }
+            else
+            {
+                m_BlockRenderer.sprite = SpriteFactory.GetBlockSprite(color);
+            }
             m_BlockObj.SetActive(true);
 
             if (gem != GemType.None && m_GemRenderer != null)
@@ -186,10 +194,17 @@ namespace BoxBlast
         {
             if (IsOccupied && m_BlockRenderer != null)
             {
-                m_BlockRenderer.sprite = SpriteFactory.GetBlockSprite(CurrentColor);
-                if (EmbeddedGem != GemType.None && m_GemRenderer != null)
+                if (EmbeddedGem != GemType.None)
                 {
-                    m_GemRenderer.sprite = GemIconFactory.GetGemSprite(EmbeddedGem);
+                    m_BlockRenderer.sprite = SpriteFactory.GetGemCarrierBlockSprite(CurrentColor);
+                    if (m_GemRenderer != null)
+                    {
+                        m_GemRenderer.sprite = GemIconFactory.GetGemSprite(EmbeddedGem);
+                    }
+                }
+                else
+                {
+                    m_BlockRenderer.sprite = SpriteFactory.GetBlockSprite(CurrentColor);
                 }
             }
         }

@@ -125,8 +125,8 @@ namespace BoxBlast
             // 1. Activate level FIRST so managers know Adventure layout is active
             IsLevelActive = true;
 
-            // 2. Switch Grid and Spawner to Adventure mode layout
-            bool isLandscape = Screen.width > Screen.height;
+            // 2. Switch Grid and Spawner to Adventure mode layout (Strict Mobile Portrait)
+            bool isLandscape = false;
             if (GridManager.Instance != null)
             {
                 GridManager.Instance.UpdateLayout(isLandscape);

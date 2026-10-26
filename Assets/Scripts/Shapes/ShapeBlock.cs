@@ -31,7 +31,14 @@ namespace BoxBlast
                 m_SpriteRenderer = GetComponent<SpriteRenderer>();
             }
 
-            m_SpriteRenderer.sprite = SpriteFactory.GetBlockSprite(color);
+            if (gem != GemType.None)
+            {
+                m_SpriteRenderer.sprite = SpriteFactory.GetGemCarrierBlockSprite(color);
+            }
+            else
+            {
+                m_SpriteRenderer.sprite = SpriteFactory.GetBlockSprite(color);
+            }
             m_SpriteRenderer.sortingOrder = 10; // Render above grid
             float effectiveSize = (GridManager.Instance != null) ? GridManager.Instance.CellSize : blockSize;
             transform.localScale = Vector3.one * (effectiveSize * 0.98f * GridCell.BlockScale);
@@ -60,11 +67,19 @@ namespace BoxBlast
             EnsureGemObject();
             if (gem != GemType.None)
             {
+                if (m_SpriteRenderer != null)
+                {
+                    m_SpriteRenderer.sprite = SpriteFactory.GetGemCarrierBlockSprite(m_CurrentColor);
+                }
                 m_GemRenderer.sprite = GemIconFactory.GetGemSprite(gem);
                 m_GemObj.SetActive(true);
             }
             else
             {
+                if (m_SpriteRenderer != null)
+                {
+                    m_SpriteRenderer.sprite = SpriteFactory.GetBlockSprite(m_CurrentColor);
+                }
                 m_GemObj.SetActive(false);
             }
         }
@@ -73,7 +88,14 @@ namespace BoxBlast
         {
             if (m_SpriteRenderer != null)
             {
-                m_SpriteRenderer.sprite = SpriteFactory.GetBlockSprite(m_CurrentColor);
+                if (EmbeddedGem != GemType.None)
+                {
+                    m_SpriteRenderer.sprite = SpriteFactory.GetGemCarrierBlockSprite(m_CurrentColor);
+                }
+                else
+                {
+                    m_SpriteRenderer.sprite = SpriteFactory.GetBlockSprite(m_CurrentColor);
+                }
             }
             if (EmbeddedGem != GemType.None && m_GemRenderer != null)
             {

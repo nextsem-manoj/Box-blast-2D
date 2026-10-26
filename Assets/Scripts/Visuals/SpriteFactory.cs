@@ -81,33 +81,36 @@ namespace BoxBlast
         public static Sprite GetBlockSprite(Color baseColor, BallSkinType? skinType = null)
         {
             BallSkinType effectiveSkin = skinType.HasValue ? skinType.Value : SkinManager.CurrentSkin;
-            string key = $"Sphere_{effectiveSkin}_{ColorUtility.ToHtmlStringRGBA(baseColor)}";
-            if (s_SpriteCache.TryGetValue(key, out Sprite cached) && cached != null && cached.texture != null) return cached;
 
-            // 1. For custom equipped skins (Star Core, Orange Planet, Lime Mint, etc.):
-            // Return the authentic 3D skin sprite directly from Resources!
+            // 1. If a custom skin is equipped or requested (Electric Bolt, Royal Star, Rainbow Flame, Orange Planet, etc.):
             if (effectiveSkin != BallSkinType.Classic)
             {
+                string skinKey = $"SkinBlock_{effectiveSkin}";
+                if (s_SpriteCache.TryGetValue(skinKey, out Sprite skinCached) && skinCached != null && skinCached.texture != null)
+                    return skinCached;
+
                 Sprite skinSprite = GetSkinBlockSprite(effectiveSkin);
                 if (skinSprite != null)
                 {
-                    s_SpriteCache[key] = skinSprite;
+                    s_SpriteCache[skinKey] = skinSprite;
                     return skinSprite;
                 }
             }
 
-            // 2. For default gameplay (Classic): Return authentic vibrant 3D spheres (Red, Orange, Yellow, Green, Cyan, Blue, Purple, Pink)
-            if (effectiveSkin == BallSkinType.Classic)
+            // 2. Default (Classic): Render authentic vibrant 3D colorful spheres matching baseColor
+            // (Ruby Red, Sunset Orange, Golden Yellow, Emerald Green, Crystal Cyan, Sapphire Blue, Amethyst Purple, Neon Pink)
+            string key = $"Sphere_Color_{ColorUtility.ToHtmlStringRGBA(baseColor)}";
+            if (s_SpriteCache.TryGetValue(key, out Sprite cached) && cached != null && cached.texture != null)
+                return cached;
+
+            string resSphere = GetConcept1SphereName(baseColor);
+            if (!string.IsNullOrEmpty(resSphere))
             {
-                string resSphere = GetConcept1SphereName(baseColor);
-                if (!string.IsNullOrEmpty(resSphere))
+                Sprite loadedSphere = LoadOrFallbackSprite(resSphere);
+                if (loadedSphere != null)
                 {
-                    Sprite loadedSphere = LoadOrFallbackSprite(resSphere);
-                    if (loadedSphere != null)
-                    {
-                        s_SpriteCache[key] = loadedSphere;
-                        return loadedSphere;
-                    }
+                    s_SpriteCache[key] = loadedSphere;
+                    return loadedSphere;
                 }
             }
 
@@ -472,16 +475,88 @@ namespace BoxBlast
             return sprite;
         }
 
+        /// <summary>
+        /// Returns the pristine sphere backing for gem carrier blocks:
+        /// Keeps the exact color and gradient of the active skin, but strips out center emblems
+        /// (like the lightning bolt on Electric Bolt) so gems (rubies, diamonds, sapphires)
+        /// sit cleanly without clashing emblems or color mismatch.
+        /// </summary>
+        public static Sprite GetGemCarrierBlockSprite(Color baseColor, BallSkinType? skinType = null)
+        {
+            BallSkinType effectiveSkin = skinType.HasValue ? skinType.Value : SkinManager.CurrentSkin;
+
+            if (effectiveSkin == BallSkinType.LightningVolt)
+            {
+                string cacheKey = "GemCarrier_LightningVolt";
+                if (s_SpriteCache.TryGetValue(cacheKey, out Sprite cached) && cached != null && cached.texture != null)
+                    return cached;
+
+                // Load blank electric cyan sphere (exact match to Electric Bolt, bolt emblem removed)
+                Sprite loadedSp = Resources.Load<Sprite>("Sphere_ElectricBolt_Blank");
+                Texture2D tex = (loadedSp != null) ? loadedSp.texture : Resources.Load<Texture2D>("Sphere_ElectricBolt_Blank");
+
+                if (tex == null)
+                {
+                    string filePath = System.IO.Path.Combine(Application.dataPath, "Resources", "Sphere_ElectricBolt_Blank.png");
+                    if (System.IO.File.Exists(filePath))
+                    {
+                        byte[] fileData = System.IO.File.ReadAllBytes(filePath);
+                        tex = new Texture2D(2, 2, TextureFormat.RGBA32, false);
+                        if (tex.LoadImage(fileData))
+                        {
+                            tex.filterMode = FilterMode.Bilinear;
+                        }
+                    }
+                }
+
+                if (tex != null)
+                {
+                    float ppu = (tex.width >= 256) ? 200f : 100f;
+                    Sprite sp = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(0.5f, 0.5f), ppu);
+                    s_SpriteCache[cacheKey] = sp;
+                    return sp;
+                }
+
+                return LoadOrFallbackSprite("Sphere_3D_Cyan", () => GetBlockSprite(new Color(0.12f, 0.88f, 0.95f), BallSkinType.Classic));
+            }
+            else if (effectiveSkin == BallSkinType.StarCore)
+            {
+                return LoadOrFallbackSprite("Sphere_3D_Blue", () => GetBlockSprite(new Color(0.12f, 0.45f, 0.95f), BallSkinType.Classic));
+            }
+            else if (effectiveSkin == BallSkinType.GalaxySwirl)
+            {
+                return LoadOrFallbackSprite("Sphere_3D_Purple", () => GetBlockSprite(new Color(0.65f, 0.20f, 0.90f), BallSkinType.Classic));
+            }
+            else if (effectiveSkin == BallSkinType.SunBurst || effectiveSkin == BallSkinType.OrangePlanet)
+            {
+                return LoadOrFallbackSprite("Sphere_3D_Orange", () => GetBlockSprite(new Color(1.0f, 0.55f, 0.10f), BallSkinType.Classic));
+            }
+            else if (effectiveSkin == BallSkinType.LimeMint)
+            {
+                return LoadOrFallbackSprite("Sphere_3D_Green", () => GetBlockSprite(new Color(0.20f, 0.85f, 0.35f), BallSkinType.Classic));
+            }
+            else if (effectiveSkin == BallSkinType.CyanWave)
+            {
+                return LoadOrFallbackSprite("Sphere_3D_Cyan", () => GetBlockSprite(new Color(0.15f, 0.85f, 0.95f), BallSkinType.Classic));
+            }
+            else
+            {
+                return GetBlockSprite(baseColor, BallSkinType.Classic);
+            }
+        }
+
         public static Sprite GetPreviewCellSprite(Color baseColor, BallSkinType? skinType = null)
         {
             BallSkinType effectiveSkin = skinType.HasValue ? skinType.Value : SkinManager.CurrentSkin;
             string key = $"SpherePreview_{effectiveSkin}_{ColorUtility.ToHtmlStringRGBA(baseColor)}";
             if (s_SpriteCache.TryGetValue(key, out Sprite cached) && cached != null && cached.texture != null) return cached;
 
-            Color ghostColor = baseColor;
-            ghostColor.a = 0.52f;
-            Sprite ghost = GetBlockSprite(ghostColor, effectiveSkin);
-            s_SpriteCache[key] = ghost;
+            // Preview ghost behind dragged piece always matches the exact sphere being dragged (whether custom skin or colorful classic)
+            Sprite ghost = GetBlockSprite(baseColor, effectiveSkin);
+            if (ghost != null)
+            {
+                s_SpriteCache[key] = ghost;
+            }
             return ghost;
         }
 

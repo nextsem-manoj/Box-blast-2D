@@ -56,6 +56,36 @@ namespace BoxBlast
             BuildGrid();
         }
 
+        private void OnEnable()
+        {
+            SkinManager.OnSkinChanged += HandleSkinChanged;
+        }
+
+        private void OnDisable()
+        {
+            SkinManager.OnSkinChanged -= HandleSkinChanged;
+        }
+
+        private void HandleSkinChanged(BallSkinType newSkin)
+        {
+            RefreshAllOccupiedCellSprites();
+        }
+
+        public void RefreshAllOccupiedCellSprites()
+        {
+            if (m_Cells == null) return;
+            for (int x = 0; x < BoardWidth; x++)
+            {
+                for (int y = 0; y < BoardHeight; y++)
+                {
+                    if (m_Cells[x, y] != null && m_Cells[x, y].IsOccupied)
+                    {
+                        m_Cells[x, y].RefreshBlockSprite();
+                    }
+                }
+            }
+        }
+
         private void OnDestroy()
         {
             if (Instance == this) Instance = null;
@@ -131,47 +161,53 @@ namespace BoxBlast
                     m_Cells[x, y] = cell;
                 }
             }
+
+            if (Visuals3D.Visual3DManager.Instance != null && Visuals3D.Visual3DManager.Instance.Is3DActive)
+            {
+                Visuals3D.Visual3DManager.Instance.EnsureLighting(Camera.main);
+                Visuals3D.Visual3DManager.Instance.SpawnPedestal(m_GridCenter, totalSpan + TotalCellStep);
+            }
         }
 
         public void UpdateLayout(bool isLandscape)
         {
             if (m_MainCamera == null) m_MainCamera = Camera.main;
 
-            if (isLandscape)
+            bool isLevel = (LevelManager.Instance != null && LevelManager.Instance.IsLevelActive);
+            if (isLevel)
             {
-                m_GridCenter = new Vector2(-0.35f, 0f);
+                // Adventure Mode: Centered comfortably below Ribbon Header & Objectives Bar
+                m_GridCenter = new Vector2(0f, -0.72f);
                 m_CellSize = 0.56f;
                 m_CellSpacing = 0.04f;
                 if (m_MainCamera != null)
                 {
                     float aspect = (float)Screen.width / Mathf.Max(1, Screen.height);
-                    m_MainCamera.orthographicSize = Mathf.Max(5.5f, (14.5f / aspect) * 0.5f);
+                    if (aspect > 0.65f)
+                    {
+                        m_MainCamera.orthographicSize = 6.8f;
+                    }
+                    else
+                    {
+                        m_MainCamera.orthographicSize = Mathf.Max(6.6f, (7.3f / aspect) * 0.5f);
+                    }
                 }
             }
             else
             {
-                bool isLevel = (LevelManager.Instance != null && LevelManager.Instance.IsLevelActive);
-                if (isLevel)
+                // Classic Mode: Board is raised & prominent to fill mobile screen cleanly
+                m_GridCenter = new Vector2(0f, 0.35f);
+                m_CellSize = 0.66f;
+                m_CellSpacing = 0.04f;
+                if (m_MainCamera != null)
                 {
-                    // Adventure Mode: Board is placed comfortably below the Ribbon Header & Objectives Bar
-                    m_GridCenter = new Vector2(0f, -0.58f);
-                    m_CellSize = 0.58f;
-                    m_CellSpacing = 0.04f;
-                    if (m_MainCamera != null)
+                    float aspect = (float)Screen.width / Mathf.Max(1, Screen.height);
+                    if (aspect > 0.65f)
                     {
-                        float aspect = (float)Screen.width / Mathf.Max(1, Screen.height);
-                        m_MainCamera.orthographicSize = Mathf.Max(6.6f, (7.3f / aspect) * 0.5f);
+                        m_MainCamera.orthographicSize = 6.4f;
                     }
-                }
-                else
-                {
-                    // Classic Mode: Board is raised & prominent to fill screen with tight, elegant spacing
-                    m_GridCenter = new Vector2(0f, 0.40f);
-                    m_CellSize = 0.67f;
-                    m_CellSpacing = 0.04f;
-                    if (m_MainCamera != null)
+                    else
                     {
-                        float aspect = (float)Screen.width / Mathf.Max(1, Screen.height);
                         m_MainCamera.orthographicSize = Mathf.Max(6.1f, (6.8f / aspect) * 0.5f);
                     }
                 }

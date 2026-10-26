@@ -438,7 +438,7 @@ namespace BoxBlast
                 UIManager.Instance.UpdateBoosterBar();
             }
 
-            bool isLandscape = Screen.width > Screen.height;
+            bool isLandscape = false;
             if (GridManager.Instance != null)
             {
                 GridManager.Instance.UpdateLayout(isLandscape);

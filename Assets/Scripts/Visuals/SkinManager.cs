@@ -51,10 +51,10 @@ namespace BoxBlast
             new SkinInfo
             {
                 Type = BallSkinType.StarCore,
-                Name = "Star Core",
-                Description = "A radiant golden star blazing inside the glass sphere.",
+                Name = "Royal Star",
+                Description = "Vibrant royal sapphire sphere with an embossed 3D golden star.",
                 UnlockAdventureLevel = 5,
-                Emoji = ""
+                Emoji = "⭐"
             },
             new SkinInfo
             {
@@ -62,7 +62,7 @@ namespace BoxBlast
                 Name = "Orange Planet",
                 Description = "Striped citrus planetary orb with warm golden glow.",
                 UnlockAdventureLevel = 10,
-                Emoji = ""
+                Emoji = "🪐"
             },
             new SkinInfo
             {
@@ -70,7 +70,7 @@ namespace BoxBlast
                 Name = "Lime Mint",
                 Description = "Refreshing emerald mint candy swirl sphere.",
                 UnlockAdventureLevel = 15,
-                Emoji = ""
+                Emoji = "🍬"
             },
             new SkinInfo
             {
@@ -78,31 +78,31 @@ namespace BoxBlast
                 Name = "Rainbow Blast",
                 Description = "Juicy vibrant rainbow spectrum glossy sphere.",
                 UnlockAdventureLevel = 20,
-                Emoji = ""
+                Emoji = "🌈"
             },
             new SkinInfo
             {
                 Type = BallSkinType.GalaxySwirl,
-                Name = "Mystic Orb",
-                Description = "A swirling cosmic spiral nebula with shimmering stardust.",
+                Name = "Cosmic Amethyst",
+                Description = "Rich glossy purple amethyst with glowing magenta nebula swirls.",
                 UnlockAdventureLevel = 25,
-                Emoji = ""
+                Emoji = "🔮"
             },
             new SkinInfo
             {
                 Type = BallSkinType.SunBurst,
-                Name = "Solar Flare",
-                Description = "Blazing solar flares radiating from a luminous core.",
+                Name = "Rainbow Flame",
+                Description = "Vibrant multi-colored rainbow flames dancing around a glossy crystal sphere.",
                 UnlockAdventureLevel = 30,
-                Emoji = ""
+                Emoji = "🔥"
             },
             new SkinInfo
             {
                 Type = BallSkinType.LightningVolt,
-                Name = "Lightning Plasma",
-                Description = "Crackling electric plasma thunderbolts discharging pure energy.",
+                Name = "Electric Bolt",
+                Description = "Electric cyan sphere with a bold 3D golden lightning bolt emblem.",
                 UnlockAdventureLevel = 35,
-                Emoji = ""
+                Emoji = "⚡"
             },
             new SkinInfo
             {
@@ -158,6 +158,8 @@ namespace BoxBlast
         public static void ResetToDefaultClassic()
         {
             CurrentSkin = BallSkinType.Classic;
+            PlayerPrefs.DeleteKey(PREF_EQUIPPED_SKIN);
+            PlayerPrefs.Save();
             SpriteFactory.ClearSpriteCache();
             OnSkinChanged?.Invoke(BallSkinType.Classic);
         }
