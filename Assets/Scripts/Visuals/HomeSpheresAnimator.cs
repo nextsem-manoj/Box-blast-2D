@@ -142,14 +142,7 @@ namespace BoxBlast
             {
                 if (m_Spheres[i].sphereImg != null)
                 {
-                    if (currentSkin != BallSkinType.Classic)
-                    {
-                        m_Spheres[i].sphereImg.sprite = SpriteFactory.GetWardrobeSkinSprite(currentSkin);
-                    }
-                    else
-                    {
-                        m_Spheres[i].sphereImg.sprite = SpriteFactory.GetConcept3SphereSprite(i);
-                    }
+                    m_Spheres[i].sphereImg.sprite = SpriteFactory.GetWardrobeSkinSprite(currentSkin);
                 }
             }
         }
@@ -296,7 +289,7 @@ namespace BoxBlast
                 item.sphereRt.anchoredPosition = Vector2.zero;
                 item.sphereRt.sizeDelta = new Vector2(94f, 94f);
                 item.sphereImg = sphere.AddComponent<Image>();
-                item.sphereImg.sprite = SpriteFactory.GetConcept3SphereSprite(s);
+                item.sphereImg.sprite = SpriteFactory.GetWardrobeSkinSprite(SkinManager.CurrentSkin);
                 item.sphereImg.raycastTarget = true;
 
                 // Tap / Click Event for bouncy jiggle & sparkle burst

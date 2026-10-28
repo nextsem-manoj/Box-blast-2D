@@ -165,6 +165,7 @@ namespace BoxBlast
             {
                 m_BlockRenderer.sprite = SpriteFactory.GetBlockSprite(color);
             }
+            m_BlockRenderer.enabled = true;
             m_BlockObj.SetActive(true);
 
             if (Visuals3D.Visual3DManager.Instance != null && Visuals3D.Visual3DManager.Instance.Is3DActive)

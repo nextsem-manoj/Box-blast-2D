@@ -26,8 +26,8 @@ namespace BoxBlast.Visuals3D
             }
         }
 
-        public bool Is3DActive { get; set; } = true;
-        public bool UseRoundedCube { get; set; } = true; // true = rounded beveled cube, false = smooth crystal sphere
+        public bool Is3DActive { get; set; } = false;
+        public bool UseRoundedCube { get; set; } = true;
 
         private Mesh m_RoundedCubeMesh;
         private Mesh m_SphereMesh;
@@ -149,7 +149,23 @@ namespace BoxBlast.Visuals3D
         public void Apply3DBlockVisual(GameObject targetObj, Color color)
         {
             if (targetObj == null) return;
+            SpriteRenderer sr = targetObj.GetComponent<SpriteRenderer>();
+
+            if (!Is3DActive)
+            {
+                if (sr != null) sr.enabled = true;
+                Transform existingChild = targetObj.transform.Find("Mesh3D_Block");
+                if (existingChild != null) existingChild.gameObject.SetActive(false);
+                return;
+            }
+
             if (m_RoundedCubeMesh == null || m_SphereMesh == null) Initialize3DAssets();
+            Mesh chosenMesh = UseRoundedCube ? m_RoundedCubeMesh : m_SphereMesh;
+            if (chosenMesh == null)
+            {
+                if (sr != null) sr.enabled = true;
+                return;
+            }
 
             Transform child = targetObj.transform.Find("Mesh3D_Block");
             GameObject meshChild;
@@ -172,15 +188,23 @@ namespace BoxBlast.Visuals3D
             MeshRenderer mr = meshChild.GetComponent<MeshRenderer>();
             if (mr == null) mr = meshChild.AddComponent<MeshRenderer>();
 
-            mf.sharedMesh = UseRoundedCube ? m_RoundedCubeMesh : m_SphereMesh;
+            mf.sharedMesh = chosenMesh;
             mr.sharedMaterial = GetPBRMaterial(color);
-            mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
-            mr.receiveShadows = true;
+            mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            mr.receiveShadows = false;
+            if (sr != null)
+            {
+                mr.sortingLayerID = sr.sortingLayerID;
+                mr.sortingOrder = sr.sortingOrder;
+            }
+            else
+            {
+                mr.sortingOrder = 10;
+            }
             mr.enabled = true;
             meshChild.SetActive(true);
 
-            // Hide 2D SpriteRenderer if present so 3D mesh renders cleanly
-            SpriteRenderer sr = targetObj.GetComponent<SpriteRenderer>();
+            // Hide 2D SpriteRenderer only if 3D mesh is actively rendering
             if (sr != null)
             {
                 sr.enabled = false;
@@ -193,7 +217,22 @@ namespace BoxBlast.Visuals3D
         public void Apply3DGemVisual(GameObject gemObj, GemType gem)
         {
             if (gemObj == null || gem == GemType.None) return;
+            SpriteRenderer sr = gemObj.GetComponent<SpriteRenderer>();
+
+            if (!Is3DActive)
+            {
+                if (sr != null) sr.enabled = true;
+                Transform existingChild = gemObj.transform.Find("Mesh3D_Gem");
+                if (existingChild != null) existingChild.gameObject.SetActive(false);
+                return;
+            }
+
             if (m_DiamondMesh == null) Initialize3DAssets();
+            if (m_DiamondMesh == null)
+            {
+                if (sr != null) sr.enabled = true;
+                return;
+            }
 
             Transform child = gemObj.transform.Find("Mesh3D_Gem");
             GameObject meshChild;
@@ -219,12 +258,20 @@ namespace BoxBlast.Visuals3D
             mf.sharedMesh = m_DiamondMesh;
             Color gemColor = GetGemColor(gem);
             mr.sharedMaterial = GetPBRMaterial(gemColor);
-            mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
-            mr.receiveShadows = true;
+            mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            mr.receiveShadows = false;
+            if (sr != null)
+            {
+                mr.sortingLayerID = sr.sortingLayerID;
+                mr.sortingOrder = sr.sortingOrder;
+            }
+            else
+            {
+                mr.sortingOrder = 12;
+            }
             mr.enabled = true;
             meshChild.SetActive(true);
 
-            SpriteRenderer sr = gemObj.GetComponent<SpriteRenderer>();
             if (sr != null)
             {
                 sr.enabled = false;

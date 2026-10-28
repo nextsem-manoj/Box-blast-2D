@@ -82,22 +82,19 @@ namespace BoxBlast
         {
             BallSkinType effectiveSkin = skinType.HasValue ? skinType.Value : SkinManager.CurrentSkin;
 
-            // 1. If a custom skin is equipped or requested (Electric Bolt, Royal Star, Rainbow Flame, Orange Planet, etc.):
-            if (effectiveSkin != BallSkinType.Classic)
-            {
-                string skinKey = $"SkinBlock_{effectiveSkin}";
-                if (s_SpriteCache.TryGetValue(skinKey, out Sprite skinCached) && skinCached != null && skinCached.texture != null)
-                    return skinCached;
+            // 1. Single unified design: Always return the equipped skin's authentic sprite so the entire board consistently uses the selected ball design
+            string skinKey = $"SkinBlock_{effectiveSkin}";
+            if (s_SpriteCache.TryGetValue(skinKey, out Sprite skinCached) && skinCached != null && skinCached.texture != null)
+                return skinCached;
 
-                Sprite skinSprite = GetSkinBlockSprite(effectiveSkin);
-                if (skinSprite != null)
-                {
-                    s_SpriteCache[skinKey] = skinSprite;
-                    return skinSprite;
-                }
+            Sprite skinSprite = GetSkinBlockSprite(effectiveSkin);
+            if (skinSprite != null)
+            {
+                s_SpriteCache[skinKey] = skinSprite;
+                return skinSprite;
             }
 
-            // 2. Default (Classic): Render authentic vibrant 3D colorful spheres matching baseColor
+            // 2. Fallback: Render authentic vibrant 3D colorful spheres matching baseColor
             // (Ruby Red, Sunset Orange, Golden Yellow, Emerald Green, Crystal Cyan, Sapphire Blue, Amethyst Purple, Neon Pink)
             string key = $"Sphere_Color_{ColorUtility.ToHtmlStringRGBA(baseColor)}";
             if (s_SpriteCache.TryGetValue(key, out Sprite cached) && cached != null && cached.texture != null)
@@ -375,6 +372,39 @@ namespace BoxBlast
 
             return false;
         }
+
+        private static string GetCandySphereName(Color c)
+        {
+            float bestDist = float.MaxValue;
+            int bestIdx = 4;
+            for (int i = 0; i < BlockColors.Length; i++)
+            {
+                Color bc = BlockColors[i];
+                float dr = c.r - bc.r;
+                float dg = c.g - bc.g;
+                float db = c.b - bc.b;
+                float d = dr * dr + dg * dg + db * db;
+                if (d < bestDist)
+                {
+                    bestDist = d;
+                    bestIdx = i;
+                }
+            }
+
+            switch (bestIdx)
+            {
+                case 0: return "Sphere_Candy_RainbowStriped"; // Red / Rainbow
+                case 1: return "Sphere_Candy_OrangePlanet";    // Orange planet swirl
+                case 2: return "Sphere_Candy_PinkSwirl";       // Yellow / Pink swirl
+                case 3: return "Sphere_Candy_LimeMint";       // Green lime mint swirl
+                case 4: return "Sphere_Candy_CyanWave";       // Cyan wave swirl
+                case 5: return "Sphere_Candy_CyanWave";       // Blue wave swirl
+                case 6: return "Sphere_Candy_PurpleBubble";   // Purple swirl
+                case 7: return "Sphere_Candy_PinkSwirl";      // Pink candy swirl
+                default: return "Sphere_Candy_PinkSwirl";
+            }
+        }
+
         private static string GetConcept1SphereName(Color c)
         {
             float bestDist = float.MaxValue;
@@ -523,25 +553,11 @@ namespace BoxBlast
             {
                 return LoadOrFallbackSprite("Sphere_3D_Blue", () => GetBlockSprite(new Color(0.12f, 0.45f, 0.95f), BallSkinType.Classic));
             }
-            else if (effectiveSkin == BallSkinType.GalaxySwirl)
-            {
-                return LoadOrFallbackSprite("Sphere_3D_Purple", () => GetBlockSprite(new Color(0.65f, 0.20f, 0.90f), BallSkinType.Classic));
-            }
-            else if (effectiveSkin == BallSkinType.SunBurst || effectiveSkin == BallSkinType.OrangePlanet)
-            {
-                return LoadOrFallbackSprite("Sphere_3D_Orange", () => GetBlockSprite(new Color(1.0f, 0.55f, 0.10f), BallSkinType.Classic));
-            }
-            else if (effectiveSkin == BallSkinType.LimeMint)
-            {
-                return LoadOrFallbackSprite("Sphere_3D_Green", () => GetBlockSprite(new Color(0.20f, 0.85f, 0.35f), BallSkinType.Classic));
-            }
-            else if (effectiveSkin == BallSkinType.CyanWave)
-            {
-                return LoadOrFallbackSprite("Sphere_3D_Cyan", () => GetBlockSprite(new Color(0.15f, 0.85f, 0.95f), BallSkinType.Classic));
-            }
             else
             {
-                return GetBlockSprite(baseColor, BallSkinType.Classic);
+                // For all other skins (Classic / CandySwirl, OrangePlanet, LimeMint, RainbowBlast, GalaxySwirl, SunBurst, CyanWave),
+                // use the equipped ball design directly so all carrier blocks match the selected design without mismatch!
+                return GetBlockSprite(baseColor, effectiveSkin);
             }
         }
 
@@ -2861,6 +2877,14 @@ namespace BoxBlast
             Sprite sp = Resources.Load<Sprite>(resourceName);
             if (sp != null)
             {
+                if (resourceName.StartsWith("Sphere_") || resourceName.StartsWith("Wardrobe_Skin_"))
+                {
+                    float expectedPpu = (sp.rect.width >= 256) ? 200f : 100f;
+                    if (Mathf.Abs(sp.pixelsPerUnit - expectedPpu) > 1f)
+                    {
+                        sp = Sprite.Create(sp.texture, sp.rect, new Vector2(0.5f, 0.5f), expectedPpu);
+                    }
+                }
                 s_SpriteCache[resourceName] = sp;
                 return sp;
             }
@@ -2869,7 +2893,8 @@ namespace BoxBlast
             Texture2D tex = Resources.Load<Texture2D>(resourceName);
             if (tex != null)
             {
-                sp = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(0.5f, 0.5f), 100f);
+                float ppu = (tex.width >= 256 && (resourceName.StartsWith("Sphere_") || resourceName.StartsWith("Wardrobe_Skin_"))) ? 200f : 100f;
+                sp = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(0.5f, 0.5f), ppu);
                 s_SpriteCache[resourceName] = sp;
                 return sp;
             }
@@ -2883,7 +2908,8 @@ namespace BoxBlast
                 if (diskTex.LoadImage(fileData))
                 {
                     diskTex.filterMode = FilterMode.Bilinear;
-                    sp = Sprite.Create(diskTex, new Rect(0, 0, diskTex.width, diskTex.height), new Vector2(0.5f, 0.5f), 100f);
+                    float ppu = (diskTex.width >= 256 && (resourceName.StartsWith("Sphere_") || resourceName.StartsWith("Wardrobe_Skin_"))) ? 200f : 100f;
+                    sp = Sprite.Create(diskTex, new Rect(0, 0, diskTex.width, diskTex.height), new Vector2(0.5f, 0.5f), ppu);
                     s_SpriteCache[resourceName] = sp;
                     return sp;
                 }

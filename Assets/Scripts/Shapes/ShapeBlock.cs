@@ -39,6 +39,7 @@ namespace BoxBlast
             {
                 m_SpriteRenderer.sprite = SpriteFactory.GetBlockSprite(color);
             }
+            m_SpriteRenderer.enabled = true;
             m_SpriteRenderer.sortingOrder = 10; // Render above grid
             float effectiveSize = (GridManager.Instance != null) ? GridManager.Instance.CellSize : blockSize;
             transform.localScale = Vector3.one * (effectiveSize * 0.98f * GridCell.BlockScale);
